@@ -52,6 +52,13 @@ open with an `## Invariants` section; read it before changing anything in that a
 [updates](features/updates.md) ·
 [support](features/support.md)
 
+## Proposals
+
+Numbered RFCs for changes that are decided but not built yet. A proposal contradicts nothing: it
+amends no feature doc until its implementation lands.
+
+[0001 address a row by digit](rfcs/0001-address-a-row-by-digit.md)
+
 ## Contributing
 
 [`CONTRIBUTING.md`](../CONTRIBUTING.md) covers the workflow — what to open, what to test, what a PR needs.
