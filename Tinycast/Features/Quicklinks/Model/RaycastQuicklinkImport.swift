@@ -36,7 +36,7 @@ enum RaycastQuicklinkImport {
             guard let name = trimmed(entry["name"]), let rawLink = trimmed(entry["link"]) else {
                 return nil
             }
-            let link = rewrittenLink(rawLink)
+            let link = Quicklink.replacingArgumentTokens(rawLink)
             guard !link.isEmpty else { return nil }
             return Quicklink(
                 name: name,
@@ -45,32 +45,6 @@ enum RaycastQuicklinkImport {
                     in: entry, platforms: platforms, bundleIDForAppPath: bundleIDForAppPath),
                 createdAt: date(entry["createdAt"] as? String, fractional: fractional, whole: whole))
         }
-    }
-
-    /// `{Query}` is Raycast's argument token; the editor only writes `{argument}`.
-    static func rewrittenLink(_ link: String) -> String {
-        var result = ""
-        var position = link.startIndex
-        while position < link.endIndex,
-            let opening = link[position...].firstIndex(of: "{"),
-            let closing = link[link.index(after: opening)...].firstIndex(of: "}")
-        {
-            result += link[position..<opening]
-            let body = String(link[link.index(after: opening)..<closing])
-            result += rewrittenToken(body)
-            position = link.index(after: closing)
-        }
-        result += link[position...]
-        return result
-    }
-
-    private static func rewrittenToken(_ body: String) -> String {
-        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
-        let commandEnd =
-            trimmed.firstIndex(where: { $0.isWhitespace || $0 == "=" || $0 == "|" })
-            ?? trimmed.endIndex
-        guard trimmed[..<commandEnd].lowercased() == "query" else { return "{\(body)}" }
-        return "{argument\(trimmed[commandEnd...])}"
     }
 
     private static func openWithBundleID(

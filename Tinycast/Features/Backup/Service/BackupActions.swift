@@ -186,6 +186,148 @@ enum BackupActions {
             missingImages: result.missingImages)
     }
 
+    // MARK: - Alfred (an unencrypted package folder; the pane owns the inline status)
+
+    struct AlfredOutcome {
+        var settingsFields: Int
+        var shortcuts: Int
+        var snippetsImported: Int
+        var snippetsNeedEnabling: Bool
+        /// Set when the snippet files couldn't be written; the rest of the import still applied.
+        var snippetsError: String?
+        var quicklinksImported: Int
+        /// Set when the library wouldn't open; the rest of the import still applied.
+        var quicklinksError: String?
+        var commandsImported: Int
+        var skippedWorkflows: Int
+        var skippedSearches: [String]
+    }
+
+    static func importAlfred(
+        core: AppCore, package: URL, options: AlfredImportOptions = .all
+    ) async throws -> AlfredOutcome {
+        // Off-main in an autoreleasepool, so the package's many plists drain at once.
+        let result = try await Task.detached(priority: .userInitiated) {
+            try autoreleasepool {
+                try AlfredPreferencesReader.read(package: package).selecting(options)
+            }
+        }.value
+        guard
+            await confirmExecutableImport(
+                core: core, commands: result.commands.count,
+                shortcuts: result.commands.filter { $0.hotkey != nil }.count,
+                source: "This Alfred import")
+        else { throw CancellationError() }
+
+        var snippetsImported = 0
+        var snippetsError: String?
+        if !result.snippets.isEmpty {
+            do {
+                // Start the store first, so imported snippets reach the launcher at once.
+                if core.settings.snippetsEnabled {
+                    await core.snippetsStore.start()
+                }
+                snippetsImported =
+                    try await core.snippetsStore.importSnippets(result.snippets).count
+            } catch {
+                snippetsError = error.localizedDescription
+            }
+        }
+        var quicklinksImported = 0
+        var quicklinksError: String?
+        if !result.quicklinks.isEmpty {
+            if core.quicklinks.isAvailable {
+                quicklinksImported =
+                    core.quicklinkCoordinator.addImportedQuicklinks(result.quicklinks).count
+                // Same reason as a Raycast import: a link grants no permission class.
+                if quicklinksImported > 0 { core.settings.quicklinksEnabled = true }
+            } else {
+                quicklinksError = QuicklinkError.storageUnavailable.errorDescription
+            }
+        }
+        // Merged, never replaced: the library is the user's own, Alfred's is only part of it.
+        let added = core.customCommands.add(contentsOf: result.commands.map(\.command))
+
+        var backup = SettingsBackup()
+        if let scopes = result.searchScopes {
+            var settings = SettingsBackup.SettingsData()
+            settings.searchScopes = scopes
+            backup.settings = settings
+        }
+        backup.hotkeys = alfredHotkeys(result, addedCommands: added)
+        let summary = backup.apply(to: core)
+        return AlfredOutcome(
+            settingsFields: summary.settingsFields,
+            shortcuts: summary.hotkeys,
+            snippetsImported: snippetsImported,
+            snippetsNeedEnabling: snippetsImported > 0 && !core.settings.snippetsEnabled,
+            snippetsError: snippetsError,
+            quicklinksImported: quicklinksImported,
+            quicklinksError: quicklinksError,
+            commandsImported: added.count,
+            skippedWorkflows: result.skippedWorkflows,
+            skippedSearches: result.skippedSearches)
+    }
+
+    /// A workflow's chord only exists once its command does, so it is read back off the store.
+    private static func alfredHotkeys(
+        _ result: AlfredImport.Result, addedCommands: [CustomCommand]
+    ) -> SettingsBackup.HotkeyBackup? {
+        var hotkeys = SettingsBackup.HotkeyBackup()
+        var mapped = false
+        if let palette = result.paletteHotkey {
+            hotkeys.togglePalette = palette
+            mapped = true
+        }
+        if let clipboard = result.clipboardHotkey {
+            hotkeys.commands = [CommandID.clipboardHistory.rawValue: clipboard]
+            mapped = true
+        }
+        var commands: [String: HotKeyBinding] = [:]
+        for entry in result.commands {
+            guard let binding = entry.hotkey,
+                addedCommands.contains(where: { $0.id == entry.command.id })
+            else { continue }
+            commands[entry.command.id.uuidString.lowercased()] = binding
+        }
+        if !commands.isEmpty {
+            hotkeys.customCommands = commands
+            mapped = true
+        }
+        return mapped ? hotkeys : nil
+    }
+
+    /// Shared folder picker used by the Backup pane.
+    static func pickAlfredPackage() -> URL? {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Choose"
+        NSApp.activate(ignoringOtherApps: true)
+        return panel.runModal() == .OK ? panel.url : nil
+    }
+
+    static func isAlfredPackage(_ url: URL) -> Bool {
+        AlfredPreferencesReader.isPackage(url)
+    }
+
+    /// The preferences app holds Alfred's own hotkey window, so it goes with the app.
+    private static let alfredBundleIDs = [
+        "com.runningwithcrayons.Alfred", "com.runningwithcrayons.Alfred-Preferences"
+    ]
+
+    static func isAlfredBundleID(_ id: String) -> Bool { alfredBundleIDs.contains(id) }
+
+    static func quitAlfred() {
+        for app in NSWorkspace.shared.runningApplications
+        where app.bundleIdentifier.map(isAlfredBundleID) == true
+            && app.activationPolicy != .prohibited
+        {
+            app.terminate()
+        }
+    }
+
     /// Every Raycast channel (stable, beta, alpha, internal) shares this bundle-id prefix.
     static let raycastBundleIDPrefix = "com.raycast"
 
@@ -290,6 +432,43 @@ enum BackupActions {
         return message
     }
 
+    /// One sentence per Alfred category that actually moved, so nothing is imported silently.
+    static func alfredText(_ outcome: AlfredOutcome) -> String {
+        var parts: [String] = []
+        var applied: [String] = []
+        if outcome.settingsFields > 0 { applied.append("\(outcome.settingsFields) settings") }
+        if outcome.shortcuts > 0 { applied.append("\(outcome.shortcuts) shortcuts") }
+        if !applied.isEmpty { parts.append("Applied " + applied.joined(separator: ", ") + ".") }
+        if outcome.snippetsImported > 0 {
+            parts.append("Imported \(outcome.snippetsImported) snippets.")
+        }
+        if outcome.snippetsNeedEnabling { parts.append(snippetsNeedEnablingText) }
+        if let snippetsError = outcome.snippetsError {
+            parts.append("Couldn’t import snippets: \(snippetsError)")
+        }
+        if outcome.quicklinksImported > 0 {
+            let noun = outcome.quicklinksImported == 1 ? "quicklink" : "quicklinks"
+            parts.append("Imported \(outcome.quicklinksImported) \(noun).")
+        }
+        if let quicklinksError = outcome.quicklinksError {
+            parts.append("Couldn’t import quicklinks: \(quicklinksError)")
+        }
+        if outcome.commandsImported > 0 {
+            let noun = outcome.commandsImported == 1 ? "custom command" : "custom commands"
+            parts.append("Imported \(outcome.commandsImported) \(noun) from Alfred workflows.")
+        }
+        if outcome.skippedWorkflows > 0 {
+            let noun = outcome.skippedWorkflows == 1 ? "workflow was" : "workflows were"
+            parts.append(
+                "\(outcome.skippedWorkflows) \(noun) left out: only one running a single bash "
+                    + "script from one trigger comes across.")
+        }
+        if !outcome.skippedSearches.isEmpty {
+            parts.append("No search template for " + outcome.skippedSearches.joined(separator: ", ") + ".")
+        }
+        return parts.isEmpty ? nothingImportedText : parts.joined(separator: " ")
+    }
+
     /// nil when no settings applied, so a caller can compose one combined sentence.
     static func appliedText(_ s: SettingsBackup.ApplySummary) -> String? {
         var parts: [String] = []
@@ -347,7 +526,7 @@ enum BackupActions {
     }
 
     private static func confirmExecutableImport(
-        core: AppCore, commands: Int, shortcuts: Int
+        core: AppCore, commands: Int, shortcuts: Int, source: String = "This backup"
     ) async
         -> Bool
     {
@@ -359,7 +538,7 @@ enum BackupActions {
         return await core.confirm(
             title: "Import executable commands?",
             message:
-                "This backup contains \(commandText) and \(shortcutText). Custom commands can run "
+                "\(source) contains \(commandText) and \(shortcutText). Custom commands can run "
                 + "arbitrary shell code. Only import files you trust.",
             symbol: importSymbol, confirmTitle: "Import", confirmRole: .standard)
     }

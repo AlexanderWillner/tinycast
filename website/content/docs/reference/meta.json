@@ -6,6 +6,7 @@
     "settings",
     "backup",
     "import-from-raycast",
+    "import-from-alfred",
     "updates"
   ]
 }

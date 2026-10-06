@@ -66,7 +66,15 @@ export function Switch() {
         >
           Read the import guide
           <ArrowRight size={13} aria-hidden="true" />
+        </Link>{" "}
+        Coming from Alfred instead?{" "}
+        <Link
+          href="/docs/reference/import-from-alfred"
+          className="text-fg underline decoration-border-strong underline-offset-4 transition-colors hover:decoration-violet-bright"
+        >
+          That import is here too
         </Link>
+        .
       </p>
     </Section>
   );

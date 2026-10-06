@@ -10,6 +10,11 @@ struct BackupSettingsView: View {
     @State private var status: Status?
     @State private var selection: RaycastImportOptions = .all
     @State private var isRaycastExport = false
+    @State private var alfredPackage: URL?
+    @State private var alfredSelection: AlfredImportOptions = .all
+    @State private var isAlfredPackage = false
+    @State private var importingAlfred = false
+    @State private var alfredStatus: Status?
     @State private var exportSelection = BackupCategory.all
     @State private var importSelection: Set<BackupCategory> = []
     @State private var exporting = false
@@ -29,6 +34,10 @@ struct BackupSettingsView: View {
         runningApps.runningBundleIDs.contains(where: BackupActions.isRaycastBundleID)
     }
 
+    private var alfredRunning: Bool {
+        runningApps.runningBundleIDs.contains(where: BackupActions.isAlfredBundleID)
+    }
+
     /// Turning it on may ask first, so the switch follows the setting rather than the click.
     private var settingsFileSync: Binding<Bool> {
         Binding(
@@ -41,6 +50,13 @@ struct BackupSettingsView: View {
             return "A .rayconfig file from Raycast 2.0 or later."
         }
         return "\(name) — \(isRaycastExport ? "Raycast export" : "not a Raycast export")"
+    }
+
+    private var alfredPackageSubtitle: String {
+        guard let name = alfredPackage?.lastPathComponent else {
+            return "An Alfred.alfredpreferences package, or the folder Alfred keeps it in."
+        }
+        return "\(name) — \(isAlfredPackage ? "Alfred preferences" : "not an Alfred preferences package")"
     }
 
     var body: some View {
@@ -125,6 +141,30 @@ struct BackupSettingsView: View {
             }
 
             Section {
+                LabeledContent {
+                    Button("Choose…") { chooseAlfredPackage() }
+                } label: {
+                    SettingsRowTitle(.backupImportFromAlfred, "Alfred Preferences")
+                    Text(alfredPackageSubtitle)
+                }
+                AlfredImportSelection(selection: $alfredSelection)
+                alfredConflictNotice
+                LabeledContent {
+                    if importingAlfred {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Button("Import") { runAlfredImport() }
+                            .disabled(!isAlfredPackage || alfredSelection.isEmpty)
+                    }
+                } label: {
+                    Text("Import")
+                }
+                if let alfredStatus { statusRow(alfredStatus) }
+            } header: {
+                SettingsSectionHeader(.backupImportFromAlfred)
+            }
+
+            Section {
                 Toggle(isOn: settingsFileSync) {
                     SettingsRowTitle(.backupSettingsFile, "Sync settings file")
                     Text(BackupActions.settingsFilePath)
@@ -176,6 +216,27 @@ struct BackupSettingsView: View {
         case .failure(let message):
             Label(message, systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(.orange)
+        }
+    }
+
+    @ViewBuilder
+    private var alfredConflictNotice: some View {
+        if alfredRunning {
+            LabeledContent {
+                Button("Quit Alfred") { BackupActions.quitAlfred() }
+            } label: {
+                Label(
+                    "Alfred is running — quit it to avoid hotkey conflicts.",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .foregroundStyle(.orange)
+            }
+        } else {
+            Label(
+                "Unset matching Alfred shortcuts to avoid conflicts.",
+                systemImage: "info.circle"
+            )
+            .foregroundStyle(.secondary)
         }
     }
 
@@ -275,6 +336,33 @@ struct BackupSettingsView: View {
                 passphrase = ""
             } catch {
                 status = .failure(error.localizedDescription)
+            }
+        }
+    }
+
+    private func chooseAlfredPackage() {
+        guard let url = BackupActions.pickAlfredPackage() else { return }
+        alfredPackage = url
+        isAlfredPackage = BackupActions.isAlfredPackage(url)
+        alfredStatus = nil
+    }
+
+    private func runAlfredImport() {
+        guard let package = alfredPackage, isAlfredPackage, !alfredSelection.isEmpty,
+            !importingAlfred
+        else { return }
+        importingAlfred = true
+        alfredStatus = nil
+        Task {
+            defer { importingAlfred = false }
+            do {
+                let outcome = try await BackupActions.importAlfred(
+                    core: core, package: package, options: alfredSelection)
+                alfredStatus = .success(BackupActions.alfredText(outcome))
+            } catch is CancellationError {
+                // The user declined the confirmation about running imported scripts.
+            } catch {
+                alfredStatus = .failure(error.localizedDescription)
             }
         }
     }

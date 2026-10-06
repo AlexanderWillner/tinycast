@@ -26,7 +26,8 @@ Independently of the folder tree, every mature subsystem has converged on the sa
 │ Quicklink{,Destination,Store,Archive} · AppleShortcut · Notes/Model/* ·    │
 │ Snippets/Model/* ·                                                         │
 │ ShellCommandRunner · DoubleTap{Modifier,Detector} · ClipboardStore ·       │
-│ RaycastDecoder · Scrypt · AppSettingsKey · SettingsBackupCoverage          │
+│ RaycastDecoder · Scrypt · AlfredPreferencesReader ·                       │
+│ AppSettingsKey · SettingsBackupCoverage                                   │
 │ SettingsFile{JSON,Key,Value,Format,Binding,Issue,Identity} ·               │
 │ HotKeySpelling · WindowManagementFileFormat ·                              │
 │ MeetingLink · MeetingEvent · UpcomingWindow · MeetingDay · MenuBarSummary  │

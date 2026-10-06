@@ -118,7 +118,8 @@ needs is injected, so the whole placeholder surface is covered by the standalone
 require a prompt, the same context is reused afterward, so nothing can drift while the prompt is open.
 
 The token set follows [Raycast's dynamic placeholders](https://manual.raycast.com/dynamic-placeholders)
-so a migrated snippet keeps working.
+so a migrated snippet keeps working; the [Alfred package import](alfred-import.md) translates Alfred's
+own spelling into it rather than leaving it as literal text.
 
 | Token                                      | Result                                                                                                                                                                                                             |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

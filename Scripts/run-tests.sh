@@ -497,6 +497,25 @@ run -O index notes-editor-performance \
                            Tinycast/Features/Notes/UI/NoteTextViewEditing.swift \
                            Tinycast/Features/Notes/UI/NoteTextView.swift \
                            Tinycast/Features/Notes/UI/NoteEditorView.swift
+run alfred-import-test    Tinycast/Features/Backup/Model/AlfredImport.swift \
+                           Tinycast/Features/Backup/Model/AlfredImportError.swift \
+                           Tinycast/Features/Backup/Service/AlfredPreferencesReader.swift \
+                           Tinycast/Features/HotKeys/Model/AlfredHotkeyImport.swift \
+                           Tinycast/Features/HotKeys/Model/DoubleTapModifier.swift \
+                           Tinycast/Features/HotKeys/Model/ModifierKey.swift \
+                           Tinycast/Features/HotKeys/Model/HotKeyBinding.swift \
+                           Tinycast/Features/HotKeys/Model/HyperKey.swift \
+                           Tinycast/Platform/ASCIIKeyboardLayout.swift \
+                           Tinycast/Features/HotKeys/Service/KeyShortcut.swift \
+                           Tinycast/Features/Snippets/Model/Snippet.swift \
+                           Tinycast/Features/Snippets/Model/SnippetTemplateEngine.swift \
+                           Tinycast/Features/Snippets/Model/AlfredSnippetImport.swift \
+                           Tinycast/Features/Quicklinks/Model/Quicklink.swift \
+                           Tinycast/Features/Quicklinks/Model/QuicklinkDestination.swift \
+                           Tinycast/Features/Quicklinks/Model/AlfredQuicklinkImport.swift \
+                           Tinycast/Features/CustomCommands/Model/CustomCommand.swift \
+                           Tinycast/Features/CustomCommands/Model/AlfredWorkflowImport.swift \
+                           Tinycast/Features/Launcher/Model/SearchScopes.swift
 run slow -O raycast-test   Tinycast/Features/Backup/Model/RaycastImportError.swift \
                            Tinycast/Features/Backup/Service/RaycastDecoder.swift \
                            Tinycast/Features/Backup/Service/Scrypt.swift \

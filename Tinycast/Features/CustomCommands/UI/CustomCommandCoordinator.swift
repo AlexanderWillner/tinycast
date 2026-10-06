@@ -111,7 +111,7 @@ final class CustomCommandCoordinator {
             return
         }
         guard await confirmScriptImport(count: drafts.count) else { return }
-        let added = store.add(contentsOf: drafts)
+        let added = store.add(contentsOf: drafts).count
         // Everything offered was already here, so say so rather than "0 imported".
         guard added > 0 else {
             await core.showNotice(

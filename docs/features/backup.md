@@ -48,15 +48,19 @@ A backup carries five independently selectable categories, ticked on export and 
 | `Model/SettingsBackup.swift` | The settings, fixed/per-item hotkey payloads, and their `Codable` shape |
 | `Model/SettingsBackupCoverage.swift` | The coverage declaration the harness checks |
 | `Model/RaycastImport.swift` | The importable categories, the `Result` and its per-category trim |
-| `Model/RaycastImportError.swift` | The three failures an import reports |
+| `Model/RaycastImportError.swift` | The four failures a Raycast import reports |
+| `Model/AlfredImport.swift` | The importable categories, the `Result` and its per-category trim |
+| `Model/AlfredImportError.swift` | The one failure an Alfred import reports |
 | `Service/BackupStaging.swift` | One scratch tree, created on init and removed on discard |
 | `Service/BackupComposer.swift` | Stores → staging; `plan` on main, `write` off it |
 | `Service/BackupApplier.swift` | Staging → stores, returning a per-category summary |
 | `Service/BackupActions.swift` | The effectful half: file pickers, the archive calls, dialogs, the settings-file switch |
 | `Service/RaycastDecoder.swift` | Container recognition, decrypt and decode |
 | `Service/RaycastImportReader.swift` | Raycast → Tinycast field mapping |
+| `Service/AlfredPreferencesReader.swift` | An `Alfred.alfredpreferences` package → `AlfredImport.Result` |
 | `Service/Scrypt.swift`, `Platform/Compression/Zlib.swift` | The crypto and decompression primitives |
 | `Settings/BackupCategorySelection.swift` | The category checkboxes, on both halves of the pane |
+| `Settings/RaycastImportSelection.swift`, `Settings/AlfredImportSelection.swift` | The per-source category checkboxes |
 | `Settings/BackupSettingsView.swift` | The pane, which also holds the [settings file](settings-file.md) switch |
 
 ## Inside the file
@@ -140,4 +144,5 @@ what keeps a second pass from silently failing its inserts. Same reasoning as `Q
 
 The old flat `Tinycast-Settings-*.json` export is gone rather than deprecated, and nothing reads it.
 
-Raycast import is documented separately in [raycast-import.md](raycast-import.md).
+Raycast import is documented separately in [raycast-import.md](raycast-import.md), and the Alfred
+package in [alfred-import.md](alfred-import.md).

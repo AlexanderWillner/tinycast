@@ -458,7 +458,7 @@ struct QuicklinkTests {
         ])
         expect(bare.map(\.name) == ["Bare"], "a bare array still parses, matching snippets")
         expect(
-            RaycastQuicklinkImport.rewrittenLink(
+            Quicklink.replacingArgumentTokens(
                 #"https://x.com?q={argument name="query"}"#)
                 == #"https://x.com?q={argument name="query"}"#,
             "a parameter named query is not rewritten as the token")

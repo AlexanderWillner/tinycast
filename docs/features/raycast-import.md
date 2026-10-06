@@ -46,7 +46,8 @@ are `LayoutIndependent` key codes with named modifiers, and always import as a `
 double-tap binding. A clipboard record's representations are nested and its timestamps carry fractional
 seconds; only an `image/*` representation whose file still exists becomes an image clip, and the rest
 are counted as missing rather than dropped silently. Quicklinks land through `QuicklinkArchive.merge`,
-so they add to the library and never replace it. `{Query}` is rewritten to `{argument}`; an `openWith`
+so they add to the library and never replace it. `{Query}` is rewritten to `{argument}` by the
+`Quicklink.replacingArgumentTokens` the [Alfred import](alfred-import.md) shares; an `openWith`
 app path (or a platform id in `openWithPlatforms`) resolves to a bundle ID the same way application
 hotkeys do. Raycast's ULID is discarded — each imported row gets a fresh UUID, as a JSON quicklink
 import already does. Importing at least one quicklink turns `quicklinksEnabled` on: opening a link

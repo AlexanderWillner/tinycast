@@ -102,6 +102,9 @@ Two things aren't part of a `.rayconfig`, so they have their own importers:
 - **Script commands.** **Settings → Commands → Import Raycast Scripts** turns a folder of scripts
   into custom commands. See [Commands](/docs/launcher/commands#importing-raycast-script-commands).
 
+Coming from **Alfred** instead? Tinycast reads Alfred's preferences package as well — see
+[Import from Alfred](/docs/reference/import-from-alfred).
+
 ## Afterward
 
 The pane has a **Quit Raycast** button for when you're ready.

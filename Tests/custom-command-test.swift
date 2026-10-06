@@ -129,7 +129,9 @@ struct CustomCommandTests {
             CustomCommand(name: "one", command: "/usr/bin/false")
         ])
         store.onChange = nil
-        check("a batch add counts only the commands it added", batched == 2)
+        check(
+            "a batch add returns only the commands it added",
+            batched.map(\.name) == ["One", "Two"])
         check("a whole batch is one commit", commits == 1)
         check(
             "a name colliding with the library or with the batch is dropped",

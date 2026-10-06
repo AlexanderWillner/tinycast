@@ -618,7 +618,7 @@ enum SettingsSearchCatalog {
     private static let backup: [SettingsSearchEntry] = [
         .init(
             pane: .backup,
-            keywords: ["export", "import", "restore", "migrate", "raycast"]),
+            keywords: ["export", "import", "restore", "migrate", "raycast", "alfred"]),
         .init(
             .backupExport, "Export Backup",
             keywords: ["save", "tinycast file", "archive"]),
@@ -628,6 +628,9 @@ enum SettingsSearchCatalog {
         .init(
             .backupImportFromRaycast, "Raycast Export",
             keywords: ["migrate", "rayconfig", "passphrase"]),
+        .init(
+            .backupImportFromAlfred, "Alfred Preferences",
+            keywords: ["migrate", "alfredpreferences", "workflows", "snippets", "alfred"]),
         .init(
             .backupSettingsFile, "Sync settings file",
             keywords: ["settings.json", "config", "json", "dotfiles", ".config", "edit"])

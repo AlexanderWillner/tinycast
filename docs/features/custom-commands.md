@@ -268,6 +268,9 @@ Foundation-only harness. Verify by hand:
     forwarding has no harness coverage of the inline fields that fill it.
 16. Two arguments sharing a name are separate fields; ↵ with a required one empty focuses it.
 
+Alfred workflows come over as commands through the [Alfred package import](alfred-import.md), which
+only takes the workflows that are a single bash script behind one trigger.
+
 ## Importing Raycast scripts
 
 **Settings → Commands → Import Raycast Scripts** reads a folder of

@@ -51,6 +51,31 @@ struct Quicklink: Codable, Hashable, Identifiable, Sendable {
         return UUID(uuidString: String(entryID.dropFirst(entryIDPrefix.count)))
     }
 
+    /// `{Query}` is Raycast's and Alfred's argument token; the editor only writes `{argument}`.
+    static func replacingArgumentTokens(_ link: String) -> String {
+        var result = ""
+        var position = link.startIndex
+        while position < link.endIndex,
+            let opening = link[position...].firstIndex(of: "{"),
+            let closing = link[link.index(after: opening)...].firstIndex(of: "}")
+        {
+            result += link[position..<opening]
+            let body = String(link[link.index(after: opening)..<closing])
+            result += rewrittenArgumentToken(body)
+            position = link.index(after: closing)
+        }
+        return result + link[position...]
+    }
+
+    private static func rewrittenArgumentToken(_ body: String) -> String {
+        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        let commandEnd =
+            trimmed.firstIndex(where: { $0.isWhitespace || $0 == "=" || $0 == "|" })
+            ?? trimmed.endIndex
+        guard trimmed[..<commandEnd].lowercased() == "query" else { return "{\(body)}" }
+        return "{argument\(trimmed[commandEnd...])}"
+    }
+
     /// The one display order, sorted through by both the store and the launcher slice.
     static func precedes(_ lhs: Quicklink, _ rhs: Quicklink) -> Bool {
         switch (lhs.pinnedAt, rhs.pinnedAt) {
