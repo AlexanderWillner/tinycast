@@ -4,6 +4,7 @@
 import Foundation
 
 @main
+@MainActor
 struct AlfredImportTests {
     static var failures = 0
     static var passes = 0

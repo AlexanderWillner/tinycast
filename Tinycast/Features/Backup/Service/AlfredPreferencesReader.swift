@@ -77,27 +77,36 @@ enum AlfredPreferencesReader {
         return newest
     }
 
-    /// Every `prefs.plist` under `root`, keyed by its folder path relative to `root`.
+    /// Every `prefs.plist` under `root`, keyed by relative folder; hand-walked so symlinks keep working.
     private static func plists(
         in root: URL, skipping skipped: Set<String>, fileManager: FileManager
     ) -> [String: [String: Any]] {
-        guard let enumerator = fileManager.enumerator(at: root, includingPropertiesForKeys: nil)
-        else { return [:] }
         var values: [String: [String: Any]] = [:]
-        for case let url as URL in enumerator {
-            let folder = url.deletingLastPathComponent()
-            if folder.path == root.path, skipped.contains(url.lastPathComponent) {
-                enumerator.skipDescendants()
-                continue
+        var stack = [(dir: root, key: "", top: true)]
+        while let current = stack.popLast() {
+            let entries =
+                (try? fileManager.contentsOfDirectory(
+                    at: current.dir, includingPropertiesForKeys: [.isDirectoryKey],
+                    options: [])) ?? []
+            for entry in entries {
+                let isDir =
+                    (try? entry.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
+                if isDir {
+                    if current.top, skipped.contains(entry.lastPathComponent) { continue }
+                    let key =
+                        current.key.isEmpty
+                        ? entry.lastPathComponent : "\(current.key)/\(entry.lastPathComponent)"
+                    stack.append((entry, key, false))
+                } else if entry.lastPathComponent == "prefs.plist" {
+                    // `preferences/prefs.plist` sits at the root and names no feature, so it has no key.
+                    guard !current.key.isEmpty,
+                        let data = try? Data(contentsOf: entry),
+                        let plist = try? PropertyListSerialization.propertyList(
+                            from: data, format: nil) as? [String: Any]
+                    else { continue }
+                    values[current.key] = plist
+                }
             }
-            guard url.lastPathComponent == "prefs.plist",
-                let data = try? Data(contentsOf: url),
-                let plist = try? PropertyListSerialization.propertyList(from: data, format: nil)
-                    as? [String: Any]
-            else { continue }
-            // `preferences/prefs.plist` sits at the root and names no feature, so it has no key.
-            guard folder.path != root.path else { continue }
-            values[folder.path.replacingOccurrences(of: root.path + "/", with: "")] = plist
         }
         return values
     }
@@ -122,8 +131,7 @@ enum AlfredPreferencesReader {
     private static func mapQuicklinks(
         package: URL, preferences: Preferences, fileManager: FileManager
     ) -> (quicklinks: [Quicklink], skipped: [String]) {
-        var links = bookmarkPages(in: package)
-            .flatMap(AlfredQuicklinkImport.bookmarks(inPages:))
+        var links = AlfredQuicklinkImport.bookmarks(inPages: bookmarkPages(in: package))
         var skipped: [String] = []
         links.append(contentsOf: customSearches(preferences.plist("features/websearch")))
         let searches = defaultSearches(package: package, preferences: preferences,

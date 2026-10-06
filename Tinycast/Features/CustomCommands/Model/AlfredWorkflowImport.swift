@@ -96,7 +96,7 @@ enum AlfredWorkflowImport {
         var quote: Character?
         var escaped = false
         while index < script.endIndex {
-            if let open = quote, !escaped, script[index...].hasPrefix(needle) { return true }
+            if quote != nil, !escaped, script[index...].hasPrefix(needle) { return true }
             let character = script[index]
             index = script.index(after: index)
             if escaped {
@@ -151,5 +151,5 @@ enum AlfredWorkflowImport {
 }
 
 private extension String {
-    fileprivate var nilIfEmpty: String? { isEmpty ? nil : self }
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }

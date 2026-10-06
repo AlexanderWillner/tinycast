@@ -37,7 +37,7 @@ enum AlfredImport {
         func selecting(_ options: AlfredImportOptions) -> Result {
             let shortcuts = options.contains(.shortcuts)
             // A workflow's chord belongs to Shortcuts, not to the workflow category.
-            let commands =
+            let commands: [Command] =
                 options.contains(.workflows)
                 ? commands.map { entry in
                     var trimmed = entry
