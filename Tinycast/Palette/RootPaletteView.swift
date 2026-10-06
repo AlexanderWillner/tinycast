@@ -445,6 +445,15 @@ struct RootPaletteView: View {
             .onChange(of: vm.favoriteSlotToken) {
                 if let index = vm.favoriteSlotIndex { performShortcut(.favoriteSlot(index)) }
             }
+            // ⌘N arrives as a row index the same way; past the rows it is a no-op.
+            .onChange(of: vm.digitToken) {
+                guard !isCollapsed, !vm.isControlListOpen else { return }
+                guard case .row(let index) = vm.digitAction else { return }
+                let count = screen.rows.count
+                guard (0..<count).contains(index) else { return }
+                vm.selection = index
+                scroll = ScrollIntent(kind: .follow)
+            }
             // One optional makes "exactly one menu" structural; this only presents it.
             .onChange(of: openMenu) {
                 guard menuOpen else { return }

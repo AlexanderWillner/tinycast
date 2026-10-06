@@ -237,6 +237,8 @@ run palette-escape-test    Tinycast/Palette/PaletteMode.swift \
                            Tinycast/Features/CustomCommands/Model/CustomCommand.swift
 run palette-navigation-test Tinycast/Palette/PaletteState.swift \
                            Tinycast/Palette/PaletteMode.swift \
+                           Tinycast/Palette/PaletteDigitAction.swift \
+                           $L/FavoriteSlots.swift \
                            Tinycast/Palette/HoverArming.swift \
                            Tinycast/Features/Emoji/Model/EmojiCatalog.swift \
                            Tinycast/Features/Clipboard/Model/ClipboardStore.swift \
@@ -260,6 +262,12 @@ run palette-shortcut-test  Tinycast/Palette/PaletteShortcut.swift
 run ascii-layout-test      Tinycast/Platform/ASCIIKeyboardLayout.swift
 run palette-tab-test       Tinycast/Palette/PaletteMode.swift \
                            Tinycast/Palette/PaletteTabAction.swift \
+                           Tinycast/Features/Quicklinks/Model/Quicklink.swift \
+                           Tinycast/Features/Quicklinks/Model/QuicklinkDestination.swift \
+                           Tinycast/Features/CustomCommands/Model/CustomCommand.swift
+run palette-digit-test     Tinycast/Palette/PaletteMode.swift \
+                           Tinycast/Palette/PaletteDigitAction.swift \
+                           $L/FavoriteSlots.swift \
                            Tinycast/Features/Quicklinks/Model/Quicklink.swift \
                            Tinycast/Features/Quicklinks/Model/QuicklinkDestination.swift \
                            Tinycast/Features/CustomCommands/Model/CustomCommand.swift

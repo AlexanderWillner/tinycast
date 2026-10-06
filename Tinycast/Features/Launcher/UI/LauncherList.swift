@@ -61,7 +61,7 @@ struct LauncherList: View {
         /// Its own case, because only this header carries a gear.
         case fallbackHeader(String)
         case card(LeadCard)
-        /// `slot` is the row's ⌘-digit, carried from the section build rather than searched.
+        /// `slot` is the row's ⌥⌘ favorite digit; the ⌘N row digit is resolved at render.
         case app(AppEntry, slot: Character?)
         case fallback(AppEntry, index: Int)
         var id: String {
@@ -138,6 +138,16 @@ struct LauncherList: View {
 
     var body: some View {
         let rows = rows
+        // The ⌘N each row answers to, by row id: the flat results index, never the section spot.
+        let cardOffset = card == nil ? 0 : 1
+        let digits: [String: Character] = Dictionary(
+            uniqueKeysWithValues: results.enumerated().compactMap { position, app in
+                guard let digit = FavoriteSlots.digit(at: cardOffset + position) else {
+                    return nil
+                }
+                return (app.id, digit)
+            })
+        let fallbackBase = cardOffset + results.count
         return Group {
             if results.isEmpty && card == nil && fallbacks == nil {
                 EmptyResults(text: "No apps found")
@@ -166,6 +176,7 @@ struct LauncherList: View {
                                         app: app,
                                         selected: app.id == selectedRowID,
                                         running: runningApps.isRunning(app),
+                                        digit: digits[app.id],
                                         slot: slot
                                     )
                                     .contentShape(Rectangle())
@@ -175,6 +186,7 @@ struct LauncherList: View {
                                 case .fallback(let app, let index):
                                     AppRow(
                                         app: app, selected: row.id == selectedRowID, running: false,
+                                        digit: FavoriteSlots.digit(at: fallbackBase + index),
                                         slot: nil
                                     )
                                     .contentShape(Rectangle())
@@ -232,7 +244,9 @@ private struct AppRow: View {
     let app: AppEntry
     let selected: Bool
     let running: Bool
-    /// This row's ⌘-digit, or nil for a row no chord launches.
+    /// This row's ⌘-digit, or nil past the tenth row.
+    let digit: Character?
+    /// This row's ⌥⌘-digit, or nil unless it is a favorite.
     let slot: Character?
     /// Observed so a hotkey set/cleared in Settings re-renders the row's keycaps immediately.
     @Environment(HotKeyManager.self) private var hotKeys
@@ -304,11 +318,17 @@ private struct AppRow: View {
                 ExtensionRefreshIndicator(state: refresh)
                     .font(metrics.typography.rowTrailing)
             }
-            // Holding ⌘ turns the trailing label into the chord that launches this row.
-            if let slot, palette.commandHeld {
+            // Holding ⌥⌘ names the favorite slot; holding ⌘ names the row itself.
+            if palette.optionHeld, let slot {
                 HStack(spacing: metrics.spacing.xxs) {
+                    KeyCapChip(text: "⌥", style: .outline)
                     KeyCapChip(text: "⌘", style: .outline)
                     KeyCapChip(text: String(slot), style: .outline)
+                }
+            } else if palette.commandHeld, let digit {
+                HStack(spacing: metrics.spacing.xxs) {
+                    KeyCapChip(text: "⌘", style: .outline)
+                    KeyCapChip(text: String(digit), style: .outline)
                 }
             } else if app.kind == .meeting {
                 MeetingEntryContent(entryID: app.id) { MeetingTiming(meeting: $0, now: $1) }

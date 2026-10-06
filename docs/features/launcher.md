@@ -684,19 +684,26 @@ highlight lands differs on purpose: a **move** follows the entry, since the poin
 where that entry now sits, while a **toggle** stays with the section rather than chasing an entry
 across the list — the top of Favorites on add, the neighbour above the one that left on remove.
 
-### ⌘-digit slots
+### ⌘-digit rows
 
-`FavoriteSlots` (`Launcher/Model/FavoriteSlots.swift`) defines ten local palette slots: **⌘1…⌘9 then
-⌘0**. They match the physical number row, not the character produced by the current keyboard layout,
-so the same positions work on QWERTY and AZERTY. The same slots address pinned Clipboard entries in
-that screen; the eleventh favorite is still listed and reorderable, and simply has no slot.
+`PaletteDigitAction` (`Palette/PaletteDigitAction.swift`) resolves the physical number row by key
+code, not by the character the layout produces, so the same positions work on QWERTY and AZERTY.
+Bare **⌘1…⌘9 then ⌘0 select the Nth row** outright; ⏎ stays the single way to run the selection.
+A digit past the row count is a no-op rather than the last row, and digits never reach a collapsed
+bar, an open control list, or the emoji and extension screens, which keep their own number chords.
+Holding ⌘ reveals ⌘N on the first ten rows after a short hold, so a tap never flashes the numbers.
+
+Favorites keep their ten slots one modifier over: **⌥⌘1…⌥⌘0**, through the same `FavoriteSlots`
+table, revealed by holding ⌥. The eleventh favorite is still listed and reorderable, and simply has
+no slot.
 
 Both palette sizes serve the chords from the same prefix, because `paletteIsCollapsed` already
 requires an empty query: **compact implies empty implies `favoriteCount` is the pinned prefix**. That
 is why `LauncherScreen.pinnedFavorites` feeds the strip, the chords and the numbered rows alike,
 rather than the compact bar re-deriving an empty-query order of its own. In compact the strip draws
-the first five; ⌘6–⌘0 still launch favorites it has no room for, and the "…" is a button after them
-rather than a slot, so no favorite loses its digit to the overflow.
+the first five; ⌥⌘6–⌥⌘0 still launch favorites it has no room for, and the "…" is a button after them
+rather than a slot, so no favorite loses its digit to the overflow. Row digits stay dark in compact:
+with no list under the strip there is nothing they could select.
 
 Holding ⌘ swaps each numbered row's kind label for its chord. `PalettePanel` publishes the modifier
 into `PaletteState.commandHeld` from `.flagsChanged` and clears it in `resignKey` — not in `prepare`,

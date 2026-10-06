@@ -44,6 +44,10 @@ final class PaletteState {
     private(set) var favoriteSlotToken = UUID()
     /// The last slot index from `noteFavoriteSlot`, consumed by the SwiftUI layer.
     private(set) var favoriteSlotIndex: Int?
+    /// Bumped when AppKit resolves a number-row chord; the action rides alongside.
+    private(set) var digitToken = UUID()
+    /// The last digit action from `noteDigit`, consumed by the SwiftUI layer.
+    private(set) var digitAction: PaletteDigitAction?
     /// Bumped for ⌘0 / ⌘+ / ⌘-, which the panel claims before the field editor can.
     private(set) var emojiGridZoomToken = UUID()
     /// The last zoom from `noteEmojiGridZoom`, consumed by the SwiftUI layer.
@@ -62,6 +66,9 @@ final class PaletteState {
     private(set) var commandHeld = false
     /// A chord is a tap, so the numbering waits out the tap before it claims the trailing labels.
     @ObservationIgnored private var commandHoldTask: Task<Void, Never>?
+    /// True once ⌥ has been *held*, which numbers the favorite slots. The panel is the only writer.
+    private(set) var optionHeld = false
+    @ObservationIgnored private var optionHoldTask: Task<Void, Never>?
     /// True while a form field owns the keyboard, so the palette's own text keys stay out of it.
     private(set) var isEditingField = false
     /// True while a control inside a screen has a list open, which owns the arrows and ↵ whole.
@@ -187,6 +194,11 @@ final class PaletteState {
         favoriteSlotToken = UUID()
     }
 
+    func noteDigit(_ action: PaletteDigitAction) {
+        digitAction = action
+        digitToken = UUID()
+    }
+
     func noteEmojiGridZoom(_ zoom: EmojiGridZoom) {
         emojiGridZoom = zoom
         emojiGridZoomToken = UUID()
@@ -204,6 +216,21 @@ final class PaletteState {
             try? await Task.sleep(for: Self.commandHoldDelay)
             guard !Task.isCancelled else { return }
             self?.commandHeld = true
+        }
+    }
+
+    func noteOptionHeld(_ held: Bool) {
+        optionHoldTask?.cancel()
+        optionHoldTask = nil
+        guard held else {
+            optionHeld = false
+            return
+        }
+        guard !optionHeld else { return }
+        optionHoldTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.commandHoldDelay)
+            guard !Task.isCancelled else { return }
+            self?.optionHeld = true
         }
     }
 

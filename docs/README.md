@@ -54,8 +54,7 @@ open with an `## Invariants` section; read it before changing anything in that a
 
 ## Proposals
 
-Numbered RFCs for changes that are decided but not built yet. A proposal contradicts nothing: it
-amends no feature doc until its implementation lands.
+Numbered RFCs for decided changes; the feature docs already carry whatever landed.
 
 [0001 address a row by digit](rfcs/0001-address-a-row-by-digit.md)
 

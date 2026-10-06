@@ -362,9 +362,11 @@ Paste and Keep Window Open (⌥↵) does not promote any entry. The rows hold st
 selection, so ↓ then ⌥↵ pastes a run of entries in order. `Paster.write` therefore only writes the
 pasteboard; `paste` and `copy` promote after it, and `pasteInPlace` does not.
 
-The ten palette slots shared with launcher favorites address this visible Pinned block too. A slot
-uses the current query and type filter, so its first entry is the first visible pin; a missing slot is
-a no-op. They are fixed to the physical number row, with ⌘1…⌘9 then ⌘0 as their labels.
+The ten palette slots shared with launcher favorites address this visible Pinned block too, one
+modifier over: ⌥⌘1…⌥⌘0, while bare ⌘1…⌘0 select the Nth visible row outright. A slot uses the
+current query and type filter, so its first entry is the first visible pin; a missing slot is
+a no-op. Both are fixed to the physical number row, with 1…9 then 0 as their positions on any
+layout.
 
 `load` reads every pinned row plus the newest 1000 unpinned ones as two indexed branches over a
 partial index on `pinned_at` (`Tests/clipboard-test.swift` covers the shape). The single

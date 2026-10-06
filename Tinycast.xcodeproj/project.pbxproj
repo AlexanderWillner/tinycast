@@ -464,6 +464,7 @@
 		94A1ED3C3F04FC266AF0F63E /* ExtensionMenuBarHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2858A6BD41085BF9C1679259 /* ExtensionMenuBarHost.swift */; };
 		94E62234828A0945CFCFE764 /* RevealableSecureField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36DEEF228EF1398B421C89B2 /* RevealableSecureField.swift */; };
 		9511690A4C16CA042542A4AC /* DictationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A54D1E880E274A3B56C6951 /* DictationModel.swift */; };
+		95458DD43B009982E3EA6220 /* PaletteDigitAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20AD275246E3A5C0233E141E /* PaletteDigitAction.swift */; };
 		9553DDEBD6FCC205069ED996 /* MenuPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF96A1566757811AD434C0F9 /* MenuPanel.swift */; };
 		9608AFDEDC3B330E64F53437 /* ExtensionStoreClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 410684C9DEB3754962C20C9C /* ExtensionStoreClient.swift */; };
 		9640B5D294EA4D3ACA1D0A85 /* DictationTextFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5BD1FBE1BBBAC5DDB1FE8A8 /* DictationTextFormatter.swift */; };
@@ -929,6 +930,7 @@
 		201FCD08ACA933378876385B /* ClipboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardStore.swift; sourceTree = "<group>"; };
 		2069789D62057E302322AFDB /* MeetingRowParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingRowParts.swift; sourceTree = "<group>"; };
 		209D951FDD587A040F1F76F3 /* PaletteWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteWindowController.swift; sourceTree = "<group>"; };
+		20AD275246E3A5C0233E141E /* PaletteDigitAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteDigitAction.swift; sourceTree = "<group>"; };
 		220CECFE780E8BE18FAE0A1C /* ExtensionGridLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionGridLayout.swift; sourceTree = "<group>"; };
 		222F9EE432F608B5C907E7C2 /* MCPOAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPOAuth.swift; sourceTree = "<group>"; };
 		22701685D1187235DA195F3B /* LauncherOrder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherOrder.swift; sourceTree = "<group>"; };
@@ -3145,6 +3147,7 @@
 				9D4C3D9FA2F775DC650985D8 /* HoverArming.swift */,
 				BF96A1566757811AD434C0F9 /* MenuPanel.swift */,
 				C004F2C2EFDD340A73C6AB02 /* PaletteCoordinator.swift */,
+				20AD275246E3A5C0233E141E /* PaletteDigitAction.swift */,
 				29A8B82DCB1B7D131BF0908A /* PaletteDropGuideController.swift */,
 				418527DD2F2370A1B82A13B7 /* PaletteDropGuideView.swift */,
 				524404EF88622426B0AA4E33 /* PaletteEnvironment.swift */,
@@ -4278,6 +4281,7 @@
 				C385AEF3C8C5A6B2BACC1D9A /* OverflowFade.swift in Sources */,
 				EA11F318540A70F74A263C71 /* PDFSurface.swift in Sources */,
 				86C36C0885D5820E70184CF6 /* PaletteCoordinator.swift in Sources */,
+				95458DD43B009982E3EA6220 /* PaletteDigitAction.swift in Sources */,
 				8DCF330D30E59FFEE8C8E8CF /* PaletteDropGuideController.swift in Sources */,
 				A47E49315D60D94CF75E22C9 /* PaletteDropGuideView.swift in Sources */,
 				695898F8FF98200F180FC2CA /* PaletteEnvironment.swift in Sources */,

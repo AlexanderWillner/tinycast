@@ -167,6 +167,7 @@ final class PalettePanel: NSPanel {
             paletteState?.disarmHoverHighlight(pointerAt: NSEvent.mouseLocation)
         case .flagsChanged:
             paletteState?.noteCommandHeld(event.modifierFlags.contains(.command))
+            paletteState?.noteOptionHeld(event.modifierFlags.contains(.option))
         default: break
         }
         defer { applyCursorPolicy(for: event) }

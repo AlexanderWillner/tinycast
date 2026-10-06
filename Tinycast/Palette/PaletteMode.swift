@@ -70,6 +70,14 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .extensionCommand: return "Search…"
         }
     }
+
+    /// False where digits already mean something else: the emoji zoom reset and third-party code.
+    var answersRowDigits: Bool {
+        switch self {
+        case .emoji, .extensionCommand: return false
+        default: return true
+        }
+    }
 }
 
 /// The app a paste lands in, resolved once per show so nothing re-reads it per render.

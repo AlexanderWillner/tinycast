@@ -52,6 +52,12 @@ struct ClipboardList: View {
 
     var body: some View {
         let rows = rows
+        // The ⌘N each row answers to, by item id: the flat results index, never the section spot.
+        let digits: [UUID: Character] = Dictionary(
+            uniqueKeysWithValues: results.enumerated().compactMap { position, item in
+                guard let digit = FavoriteSlots.digit(at: position) else { return nil }
+                return (item.id, digit)
+            })
         return ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 0) {
@@ -62,7 +68,8 @@ struct ClipboardList: View {
                         case .item(let item, let slot):
                             ClipboardRow(
                                 item: item, selected: item.id == selectedID,
-                                imageURL: store.imageURL(for: item), slot: slot
+                                imageURL: store.imageURL(for: item), digit: digits[item.id],
+                                slot: slot
                             )
                             .selectionFrame(item.id == selectedID)
                             .contentShape(Rectangle())
@@ -130,7 +137,9 @@ private struct ClipboardRow: View {
     let item: ClipboardItem
     let selected: Bool
     let imageURL: URL?
-    /// This row's ⌘-digit, or nil when it is not among the first ten visible pins.
+    /// This row's ⌘-digit, or nil past the tenth row.
+    let digit: Character?
+    /// This row's ⌥⌘-digit, or nil unless it is a pinned entry.
     let slot: Character?
     @Environment(PaletteState.self) private var palette
     @State private var hovered = false
@@ -152,10 +161,17 @@ private struct ClipboardRow: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer(minLength: 0)
-            if let slot, palette.commandHeld {
+            // Holding ⌥⌘ names the pinned slot; holding ⌘ names the row itself.
+            if palette.optionHeld, let slot {
                 HStack(spacing: metrics.spacing.xxs) {
+                    KeyCapChip(text: "⌥", style: .outline)
                     KeyCapChip(text: "⌘", style: .outline)
                     KeyCapChip(text: String(slot), style: .outline)
+                }
+            } else if palette.commandHeld, let digit {
+                HStack(spacing: metrics.spacing.xxs) {
+                    KeyCapChip(text: "⌘", style: .outline)
+                    KeyCapChip(text: String(digit), style: .outline)
                 }
             }
         }

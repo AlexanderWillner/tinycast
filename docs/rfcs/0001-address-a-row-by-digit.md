@@ -1,6 +1,6 @@
 # RFC 0001: Address a row by digit
 
-Status: proposed. Nothing here is built; no doc under `docs/features/` changes with this commit.
+Status: implemented. The feature docs above already carry the change.
 
 ## Problem
 

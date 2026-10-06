@@ -411,11 +411,25 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
                 return true
             }
             guard Self.commandCharacter(from: event) != nil else { return false }
-            if self.core.palette.mode == .launcher || self.core.palette.mode == .clipboard,
-                let index = FavoriteSlots.index(forKeyCode: event.keyCode)
+            if !event.isARepeat,
+                let action = PaletteDigitAction.resolve(
+                    keyCode: event.keyCode,
+                    commandOnly: event.modifierFlags.intersection([
+                        .command, .option, .control, .shift
+                    ]) == .command,
+                    commandOption: event.modifierFlags.intersection([
+                        .command, .option, .control, .shift
+                    ]) == [.command, .option],
+                    mode: self.core.palette.mode)
             {
-                self.core.palette.noteFavoriteSlot(index)
-                return true
+                switch action {
+                case .row(let index):
+                    self.core.palette.noteDigit(.row(index))
+                    return true
+                case .favoriteSlot(let index):
+                    self.core.palette.noteFavoriteSlot(index)
+                    return true
+                }
             }
             guard let character = Self.commandCharacter(from: event) else { return false }
             switch character {
