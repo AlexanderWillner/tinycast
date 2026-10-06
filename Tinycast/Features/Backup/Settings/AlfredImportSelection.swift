@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The category picker for the Backup pane's Alfred section.
+/// The category picker shared by the Backup pane and onboarding.
 struct AlfredImportSelection: View {
     @Binding var selection: AlfredImportOptions
 

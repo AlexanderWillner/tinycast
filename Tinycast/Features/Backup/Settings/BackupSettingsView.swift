@@ -10,9 +10,9 @@ struct BackupSettingsView: View {
     @State private var status: Status?
     @State private var selection: RaycastImportOptions = .all
     @State private var isRaycastExport = false
-    @State private var alfredPackage: URL?
+    @State private var alfredPackage: URL? = BackupActions.defaultAlfredPackage()
     @State private var alfredSelection: AlfredImportOptions = .all
-    @State private var isAlfredPackage = false
+    @State private var isAlfredPackage = BackupActions.defaultAlfredPackage() != nil
     @State private var importingAlfred = false
     @State private var alfredStatus: Status?
     @State private var exportSelection = BackupCategory.all

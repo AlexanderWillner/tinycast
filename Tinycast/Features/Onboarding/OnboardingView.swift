@@ -13,7 +13,7 @@ struct OnboardingView: View {
     @State private var accessibilityTrusted = Permissions.isAccessibilityTrusted()
     private let refreshTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    private static let lastStep = 3
+    private static let lastStep = 4
     static let width: CGFloat = 520
     /// Only until the first layout measures the real one, which is what the window then takes.
     static let initialSize = CGSize(width: width, height: 352)
@@ -90,6 +90,7 @@ struct OnboardingView: View {
         case 0: "Welcome to Tinycast"
         case 1: "Enable Pasting"
         case 2: "Import from Raycast"
+        case 3: "Import from Alfred"
         default: "You're all set"
         }
     }
@@ -99,6 +100,7 @@ struct OnboardingView: View {
         case 0: "Set a shortcut to summon the launcher from anywhere."
         case 1: "Let Tinycast paste items back into the app you were using."
         case 2: "Bring your shortcuts, favorites, and clipboard history along."
+        case 3: "Bring your workflows, snippets, bookmarks and shortcuts along."
         default: readyMessage
         }
     }
@@ -107,6 +109,7 @@ struct OnboardingView: View {
         switch step {
         case 1: "accessibility"
         case 2: "wand.and.stars"
+        case 3: "square.and.arrow.down"
         default: "checkmark"
         }
     }
@@ -115,6 +118,7 @@ struct OnboardingView: View {
         switch step {
         case 1: .blue
         case 2: .orange
+        case 3: .gray
         default: .green
         }
     }
@@ -134,6 +138,7 @@ struct OnboardingView: View {
         case 0: shortcutStep
         case 1: accessibilityStep
         case 2: raycastStep
+        case 3: alfredStep
         default: doneStep
         }
     }
@@ -211,6 +216,27 @@ struct OnboardingView: View {
         }
     }
 
+    private var alfredStep: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.md) {
+            OnboardingCard {
+                OnboardingRow(
+                    title: "Alfred Preferences",
+                    subtitle: model.alfredPackageSubtitle,
+                    systemImage: "folder.badge.gearshape", tint: .gray
+                ) {
+                    Button("Choose…") { model.chooseAlfredPackage() }.controlSize(.small)
+                }
+            }
+            AlfredImportSelection(selection: $model.alfredSelection)
+                .padding(.horizontal, Theme.Spacing.xs)
+            if let status = model.alfredStatus {
+                importStatus(status)
+            } else {
+                caption("Optional — you can import later in Settings › Backup.")
+            }
+        }
+    }
+
     private var doneStep: some View {
         caption("Everything's ready. Hit Get Started to open the launcher.")
             .frame(maxWidth: .infinity, alignment: .center)
@@ -243,7 +269,7 @@ struct OnboardingView: View {
                         .buttonStyle(.plain)
                         .foregroundStyle(.secondary)
                 }
-                if step == 2 && model.importing {
+                if (step == 2 && model.importing) || (step == 3 && model.importingAlfred) {
                     Button {
                     } label: {
                         HStack(spacing: Theme.Spacing.sm) {
@@ -267,6 +293,7 @@ struct OnboardingView: View {
 
     private var showsSkip: Bool {
         (step == 1 && !accessibilityTrusted) || (step == 2 && !model.didImport)
+            || (step == 3 && !model.didImportAlfred)
     }
 
     private var primaryTitle: String {
@@ -281,12 +308,21 @@ struct OnboardingView: View {
             } else {
                 "Import"
             }
+        case 3:
+            if model.didImportAlfred {
+                "Continue"
+            } else if model.importingAlfred {
+                "Importing…"
+            } else {
+                "Import"
+            }
         default: "Get Started"
         }
     }
 
     private var primaryDisabled: Bool {
-        step == 2 && !model.didImport && !model.canImport
+        (step == 2 && !model.didImport && !model.canImport)
+            || (step == 3 && !model.didImportAlfred && !model.canImportAlfred)
     }
 
     private func primaryAction() {
@@ -295,6 +331,8 @@ struct OnboardingView: View {
             Permissions.openAccessibilitySettings()
         case 2 where !model.didImport:
             model.run(core: core)
+        case 3 where !model.didImportAlfred:
+            model.runAlfred(core: core)
         case Self.lastStep:
             core.onboardingCoordinator.finishOnboarding()
         default:
@@ -376,12 +414,24 @@ final class OnboardingModel {
     var status: ImportStatus?
     var selection: RaycastImportOptions = .all
     var isRaycastExport = false
+    var alfredPackage: URL? = BackupActions.defaultAlfredPackage()
+    var importingAlfred = false
+    var alfredStatus: ImportStatus?
+    var alfredSelection: AlfredImportOptions = .all
+    var isAlfredPackage = BackupActions.defaultAlfredPackage() != nil
 
     var canImport: Bool {
         isRaycastExport && !passphrase.isEmpty && !selection.isEmpty && !importing
     }
     var didImport: Bool {
         if case .success = status { return true }
+        return false
+    }
+    var canImportAlfred: Bool {
+        isAlfredPackage && !alfredSelection.isEmpty && !importingAlfred
+    }
+    var didImportAlfred: Bool {
+        if case .success = alfredStatus { return true }
         return false
     }
 
@@ -399,6 +449,20 @@ final class OnboardingModel {
         status = nil
     }
 
+    var alfredPackageSubtitle: String {
+        guard let name = alfredPackage?.lastPathComponent else {
+            return "Choose the Alfred.alfredpreferences package."
+        }
+        return "\(name) — \(isAlfredPackage ? "Alfred preferences" : "not an Alfred preferences package")"
+    }
+
+    func chooseAlfredPackage() {
+        guard let url = BackupActions.pickAlfredPackage() else { return }
+        alfredPackage = url
+        isAlfredPackage = BackupActions.isAlfredPackage(url)
+        alfredStatus = nil
+    }
+
     func run(core: AppCore) {
         guard canImport, let file else { return }
         importing = true
@@ -412,6 +476,24 @@ final class OnboardingModel {
                 passphrase = ""
             } catch {
                 status = .failure(error.localizedDescription)
+            }
+        }
+    }
+
+    func runAlfred(core: AppCore) {
+        guard canImportAlfred, let package = alfredPackage else { return }
+        importingAlfred = true
+        alfredStatus = nil
+        Task {
+            defer { importingAlfred = false }
+            do {
+                let outcome = try await BackupActions.importAlfred(
+                    core: core, package: package, options: alfredSelection)
+                alfredStatus = .success(BackupActions.alfredText(outcome))
+            } catch is CancellationError {
+                // The user declined the confirmation about running imported scripts.
+            } catch {
+                alfredStatus = .failure(error.localizedDescription)
             }
         }
     }

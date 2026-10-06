@@ -300,12 +300,20 @@ enum BackupActions {
     /// Shared folder picker used by the Backup pane.
     static func pickAlfredPackage() -> URL? {
         let panel = NSOpenPanel()
+        // Alfred.alfredpreferences is a file package: offered as a file it would be greyed out.
         panel.canChooseDirectories = true
-        panel.canChooseFiles = false
+        panel.canChooseFiles = true
         panel.allowsMultipleSelection = false
         panel.prompt = "Choose"
         NSApp.activate(ignoringOtherApps: true)
         return panel.runModal() == .OK ? panel.url : nil
+    }
+
+    /// Where Alfred keeps its preferences unless syncing moved them; nil when Alfred never ran here.
+    static func defaultAlfredPackage() -> URL? {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/Alfred/Alfred.alfredpreferences")
+        return isAlfredPackage(url) ? url : nil
     }
 
     static func isAlfredPackage(_ url: URL) -> Bool {
