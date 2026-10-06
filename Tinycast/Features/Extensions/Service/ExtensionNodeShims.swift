@@ -156,10 +156,10 @@ final class ExtensionNodeShims: @unchecked Sendable {
 
         case "readFile":
             let target = try path(0)
-            guard let data = fileManager.contents(atPath: target) else {
-                throw ShimError.noEntry(target, "open")
+            if let data = fileManager.contents(atPath: target) {
+                return data.base64EncodedString()
             }
-            return data.base64EncodedString()
+            throw readError("open", target)
 
         case "writeFile":
             let target = try path(0)
@@ -182,7 +182,7 @@ final class ExtensionNodeShims: @unchecked Sendable {
             let offset = max(0, (arguments[safe: 1] as? NSNumber)?.intValue ?? 0)
             let count = max(0, (arguments[safe: 2] as? NSNumber)?.intValue ?? 0)
             guard let handle = FileHandle(forReadingAtPath: target) else {
-                throw ShimError.noEntry(target, "open")
+                throw readError("open", target)
             }
             defer { try? handle.close() }
             try handle.seek(toOffset: UInt64(offset))
@@ -199,7 +199,7 @@ final class ExtensionNodeShims: @unchecked Sendable {
         case "readdir":
             let target = try path(0)
             guard let names = try? fileManager.contentsOfDirectory(atPath: target) else {
-                throw ShimError.noEntry(target, "scandir")
+                throw readError("scandir", target)
             }
             return names.map { name -> [String: Any] in
                 let child = (target as NSString).appendingPathComponent(name)
@@ -338,6 +338,25 @@ final class ExtensionNodeShims: @unchecked Sendable {
             "\(name): \(String(cString: strerror(code))), \(syscall)\(target)", name)
     }
 
+    /// A nil read hides the errno, so reopen raw and report it in Node's wording.
+    private func readError(_ syscall: String, _ path: String) -> ShimError {
+        let fd = Darwin.open(path, O_RDONLY | O_CLOEXEC)
+        guard fd < 0 else {
+            Darwin.close(fd)
+            return .noEntry(path, syscall)
+        }
+        switch errno {
+        case ENOENT: return .noEntry(path, syscall)
+        case EPERM:
+            return .failed("EPERM: operation not permitted, \(syscall) '\(path)'", "EPERM")
+        case EACCES:
+            return .failed("EACCES: permission denied, \(syscall) '\(path)'", "EACCES")
+        case ENOTDIR:
+            return .failed("ENOTDIR: not a directory, \(syscall) '\(path)'", "ENOTDIR")
+        default: return fileError(syscall, path)
+        }
+    }
+
     private static let errorNames: [Int32: String] = [
         EACCES: "EACCES", EBADF: "EBADF", EEXIST: "EEXIST", EISDIR: "EISDIR", EMFILE: "EMFILE",
         EINVAL: "EINVAL", ENOENT: "ENOENT", ENOSPC: "ENOSPC", ENOTDIR: "ENOTDIR", EPERM: "EPERM",
@@ -345,12 +364,11 @@ final class ExtensionNodeShims: @unchecked Sendable {
     ]
 
     private func stat(path: String, followLinks: Bool) throws -> [String: Any] {
-        let attributes =
-            followLinks
-            ? try? fileManager.attributesOfItem(
-                atPath: URL(fileURLWithPath: path).resolvingSymlinksInPath().path)
-            : try? fileManager.attributesOfItem(atPath: path)
-        guard let attributes else { throw ShimError.noEntry(path, "stat") }
+        let target =
+            followLinks ? URL(fileURLWithPath: path).resolvingSymlinksInPath().path : path
+        guard let attributes = try? fileManager.attributesOfItem(atPath: target) else {
+            throw readError("stat", target)
+        }
 
         let type = attributes[.type] as? FileAttributeType
         func milliseconds(_ key: FileAttributeKey) -> Double {
