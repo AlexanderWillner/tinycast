@@ -401,9 +401,14 @@ final class ExtensionHostBridge: ExtensionHostAPI {
             return applications(forPath: arguments.first?.stringValue)
 
         case "defaultApplication":
-            guard let path = arguments.first?.stringValue,
-                let url = NSWorkspace.shared.urlForApplication(
-                    toOpen: URL(fileURLWithPath: (path as NSString).expandingTildeInPath))
+            guard let path = arguments.first?.stringValue else {
+                throw ExtensionHostError.unsupported("getDefaultApplication")
+            }
+            // An `https:` URL names a scheme handler, not a file: `fileURLWithPath:` mangles it.
+            let target =
+                URL(string: path).flatMap { $0.scheme == nil ? nil : $0 }
+                ?? URL(fileURLWithPath: (path as NSString).expandingTildeInPath)
+            guard let url = NSWorkspace.shared.urlForApplication(toOpen: target)
             else { throw ExtensionHostError.unsupported("getDefaultApplication") }
             return describe(application: url)
 
