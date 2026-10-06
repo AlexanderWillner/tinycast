@@ -45,7 +45,7 @@ category does not exist here. Neither does Alfred have window management, a favo
 | Category | Alfred | Tinycast |
 | --- | --- | --- |
 | Shortcuts | `hotkey/prefs.plist` → `default`, `features/clipboard/prefs.plist` → `hotkey` | the palette chord and `CommandID.clipboardHistory` |
-| Search scope | `features/defaultresults/prefs.plist` → `scope` | `searchScopes`, abbreviated and deduped |
+| Search scope | `features/defaultresults/prefs.plist` → `scope` | `searchScopes`, unioned with the defaults, abbreviated and deduped |
 | Snippets | `snippets/**/*.json` | snippets, with the collection's keyword affixes applied |
 | Bookmarks & searches | `remote/pages/*.data`, `customSites`, `features/websearch/<site>/` | quicklinks |
 | Workflows | `workflows/*/info.plist` | custom commands |

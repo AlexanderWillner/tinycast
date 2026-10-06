@@ -250,8 +250,10 @@ enum BackupActions {
 
         var backup = SettingsBackup()
         if let scopes = result.searchScopes {
+            // Alfred never lists /Applications (it indexes apps separately), while Tinycast
+            // discovers apps through these same scopes — so the defaults survive the import.
             var settings = SettingsBackup.SettingsData()
-            settings.searchScopes = scopes
+            settings.searchScopes = SearchScopes.normalize(SearchScopes.defaults + scopes)
             backup.settings = settings
         }
         backup.hotkeys = alfredHotkeys(result, addedCommands: added)
