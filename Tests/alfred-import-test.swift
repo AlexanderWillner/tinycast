@@ -102,25 +102,28 @@ struct AlfredImportTests {
         check("bookmarks, custom searches and defaults all come over", result.quicklinks.count == 4)
         check(
             "an openurl bookmark lands and a launchfile one does not",
-            result.quicklinks[0].link == "https://example.com/welcome")
+            result.quicklinks[0].quicklink.link == "https://example.com/welcome")
         check(
             "an empty bookmark label falls back to the host",
-            result.quicklinks[0].name == "example.com")
+            result.quicklinks[0].quicklink.name == "example.com")
+        check("a bookmark carries no alias", result.quicklinks[0].alias == nil)
         check(
-            "a custom search keeps its title and gains its keyword",
-            result.quicklinks[1].name == "GitHub (gh)")
+            "a custom search keeps its title and its keyword becomes the alias",
+            result.quicklinks[1].quicklink.name == "GitHub"
+                && result.quicklinks[1].alias == "gh")
         check(
             "the query token is rewritten to ours",
-            result.quicklinks[1].link == "https://github.com/search?q={argument}")
+            result.quicklinks[1].quicklink.link == "https://github.com/search?q={argument}")
         check(
-            "a default search lands, and a keyword already in the title is not repeated",
-            result.quicklinks[2].name == "Google")
+            "a default search keeps its title and its keyword becomes the alias",
+            result.quicklinks[2].quicklink.name == "Google" && result.quicklinks[2].alias == "g")
         check(
-            "a keyword the title does not contain is what keeps it typeable",
-            result.quicklinks[3].name == "Google Images (gi)")
+            "a longer keyword becomes the alias rather than part of the name",
+            result.quicklinks[3].quicklink.name == "Google Images"
+                && result.quicklinks[3].alias == "gi")
         check(
             "a disabled custom search is not carried over",
-            !result.quicklinks.contains { $0.link.contains("example.com/never") })
+            !result.quicklinks.contains { $0.quicklink.link.contains("example.com/never") })
         check("a search folder with no template is reported", result.skippedSearches == ["tiktok"])
     }
 

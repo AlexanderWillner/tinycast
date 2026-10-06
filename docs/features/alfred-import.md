@@ -54,9 +54,12 @@ category does not exist here. Neither does Alfred have window management, a favo
 Carbon ones; `key: -1` is Alfred's "unset". A bare key needs a commanding modifier here exactly as it
 does everywhere else, bar the function keys. `string` is a layout-dependent glyph and is never read.
 
-**A keyword becomes part of the name.** Tinycast has no keyword field on a quicklink or a custom
-command — the launcher finds them by name — so `AlfredImport.named(_:keyword:)` appends the keyword
-in parentheses unless the title already contains it. That is what keeps `gi` finding "Google Images".
+**A search keyword becomes the quicklink's alias.** Tinycast finds quicklinks by name and by
+the alias the Settings row carries, so `AlfredQuicklinkImport` keeps the title Alfred shows as
+the name and stores the keyword alongside as the alias — that is what keeps `gi` finding
+"Google Images". A workflow has no alias of its own the import can write, so
+`AlfredImport.named(_:keyword:)` still appends the keyword in parentheses there unless the title
+already contains it.
 
 **Snippets** are one file per snippet, and a collection's `info.plist` carries the keyword prefix and
 suffix wrapped around every keyword typed into it — both are read from there, since

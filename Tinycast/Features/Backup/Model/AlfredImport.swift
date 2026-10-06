@@ -27,7 +27,7 @@ enum AlfredImport {
         var paletteHotkey: HotKeyBinding?
         var clipboardHotkey: HotKeyBinding?
         var snippets: [Snippet]
-        var quicklinks: [Quicklink]
+        var quicklinks: [AlfredQuicklinkImport.Entry]
         var commands: [Command]
         /// Workflows Tinycast cannot run, and the searches whose URL only Alfred knows.
         var skippedWorkflows: Int
@@ -56,7 +56,8 @@ enum AlfredImport {
         }
     }
 
-    /// Alfred invokes an item by keyword and we store no keyword, so it has to stay typeable.
+    /// Alfred invokes a workflow by keyword and a custom command stores none, so the keyword
+    /// has to stay typeable. Quicklinks need nothing of this: their keyword travels as an alias.
     static func named(_ title: String, keyword: String?) -> String {
         guard let keyword, !keyword.isEmpty,
             title.range(of: keyword, options: .caseInsensitive) == nil

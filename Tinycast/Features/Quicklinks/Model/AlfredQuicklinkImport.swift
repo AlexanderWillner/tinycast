@@ -3,28 +3,39 @@ import Foundation
 /// Maps Alfred's bookmarks, custom searches and default web searches onto `Quicklink`.
 /// See docs/features/alfred-import.md.
 enum AlfredQuicklinkImport {
+    /// A quicklink plus the Alfred keyword that invoked it, which becomes the quicklink's alias.
+    struct Entry: Sendable {
+        var quicklink: Quicklink
+        /// The Alfred keyword, or nil when the row had none or it matched the name.
+        var alias: String?
+    }
+
     /// Only `remote.alfred.openurl` becomes a quicklink; Alfred's other page items open files,
     /// run system commands or drive iTunes, none of which a link is.
-    static func bookmarks(inPages pages: [[String: Any]]) -> [Quicklink] {
+    static func bookmarks(inPages pages: [[String: Any]]) -> [Entry] {
         pages.flatMap { page in
             (page["items"] as? [[String: Any]] ?? []).compactMap { item in
                 guard item["actionuid"] as? String == "remote.alfred.openurl",
                     let config = item["actionconfig"] as? [String: Any],
                     let url = trimmed(config["url"])
                 else { return nil }
-                return quicklink(
-                    name: trimmed(item["buttonlabel"]) ?? host(of: url), link: url)
+                guard
+                    let link = quicklink(
+                        name: trimmed(item["buttonlabel"]) ?? host(of: url), link: url)
+                else { return nil }
+                // A bookmark has no keyword, so it carries no alias.
+                return Entry(quicklink: link, alias: nil)
             }
         }
     }
 
     /// One `customSites` row. A disabled search is not carried over, matching Alfred itself.
-    static func search(title: String, keyword: String?, url: String) -> Quicklink? {
-        quicklink(name: AlfredImport.named(title, keyword: keyword), link: url)
+    static func search(title: String, keyword: String?, url: String) -> Entry? {
+        entry(name: title, keyword: keyword, link: url)
     }
 
     /// One of Alfred's own searches: the package stores its keyword but not its URL.
-    static func defaultSearch(folder: String, keyword: String?) -> Quicklink? {
+    static func defaultSearch(folder: String, keyword: String?) -> Entry? {
         guard let template = defaultSearches[folder], let keyword, !keyword.isEmpty else {
             return nil
         }
@@ -68,6 +79,21 @@ enum AlfredQuicklinkImport {
         "youtube": ("YouTube", "https://www.youtube.com/results?search_query={query}"),
         "yubnub": ("Yubnub", "https://yubnub.com/search?q={query}")
     ]
+
+    /// The name stays the title Alfred shows; the keyword travels as the quicklink's alias, which
+    /// is what the launcher matches. An alias the name already spells adds nothing, so it is left
+    /// off rather than stored twice.
+    private static func entry(name title: String, keyword: String?, link url: String) -> Entry? {
+        let name = trimmed(title) ?? trimmed(keyword)
+        let alias = trimmed(keyword)
+        guard let link = quicklink(name: name, link: url) else { return nil }
+        let distinct =
+            alias.flatMap { candidate in
+                candidate.compare(link.name, options: .caseInsensitive) == .orderedSame
+                    ? nil : candidate
+            }
+        return Entry(quicklink: link, alias: distinct)
+    }
 
     private static func quicklink(name: String?, link: String) -> Quicklink? {
         guard let name, !name.isEmpty else { return nil }

@@ -313,6 +313,29 @@ final class QuicklinkCoordinator {
         return store.append(merge.additions)
     }
 
+    /// The Alfred import's variant: each entry carries the keyword that invoked it in Alfred, and
+    /// that keyword lands as the quicklink's alias, which is what the launcher matches.
+    @discardableResult
+    func addImportedQuicklinks(_ entries: [AlfredQuicklinkImport.Entry]) -> [Quicklink] {
+        let merge = QuicklinkArchive.merge(entries.map(\.quicklink), into: store.quicklinks)
+        // The merge mints fresh identities but keeps the trimmed name and link, and every
+        // addition holds a link no other addition holds — so the link re-attaches the alias.
+        var aliasByLink: [String: String] = [:]
+        for entry in entries {
+            guard let alias = entry.alias, !alias.isEmpty else { continue }
+            let key = entry.quicklink.link.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !key.isEmpty, aliasByLink[key] == nil else { continue }
+            aliasByLink[key] = alias
+        }
+        let added = store.append(merge.additions)
+        let addedIDs = Set(added.map(\.id))
+        for candidate in merge.additions where addedIDs.contains(candidate.id) {
+            let key = candidate.link.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let alias = aliasByLink[key] { aliases.setAlias(alias, for: candidate.entryID) }
+        }
+        return added
+    }
+
     func importQuicklinks() async {
         guard let url = BackupActions.chooseJSONFile() else { return }
         do {

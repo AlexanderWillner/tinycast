@@ -130,7 +130,7 @@ enum AlfredPreferencesReader {
 
     private static func mapQuicklinks(
         package: URL, preferences: Preferences, fileManager: FileManager
-    ) -> (quicklinks: [Quicklink], skipped: [String]) {
+    ) -> (quicklinks: [AlfredQuicklinkImport.Entry], skipped: [String]) {
         var links = AlfredQuicklinkImport.bookmarks(inPages: bookmarkPages(in: package))
         var skipped: [String] = []
         links.append(contentsOf: customSearches(preferences.plist("features/websearch")))
@@ -141,7 +141,7 @@ enum AlfredPreferencesReader {
         return (links, skipped)
     }
 
-    private static func customSearches(_ preferences: [String: Any]?) -> [Quicklink] {
+    private static func customSearches(_ preferences: [String: Any]?) -> [AlfredQuicklinkImport.Entry] {
         guard let sites = preferences?["customSites"] as? [String: Any] else { return [] }
         return sites.keys.sorted().compactMap { uid in
             guard let site = sites[uid] as? [String: Any],
@@ -157,7 +157,7 @@ enum AlfredPreferencesReader {
     /// folder we have no template for is reported rather than guessed at.
     private static func defaultSearches(
         package: URL, preferences: Preferences, fileManager: FileManager
-    ) -> (quicklinks: [Quicklink], skipped: [String]) {
+    ) -> (quicklinks: [AlfredQuicklinkImport.Entry], skipped: [String]) {
         let root = package.appendingPathComponent("preferences/features/websearch")
         let folders =
             ((try? fileManager.contentsOfDirectory(
@@ -166,7 +166,7 @@ enum AlfredPreferencesReader {
                 (try? $0.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
             }
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
-        var quicklinks: [Quicklink] = []
+        var quicklinks: [AlfredQuicklinkImport.Entry] = []
         var skipped: [String] = []
         for folder in folders {
             let name = folder.lastPathComponent
