@@ -12,6 +12,8 @@ final class ExtensionNodeShims: @unchecked Sendable {
     private static let openableFlags =
         O_RDONLY | O_WRONLY | O_RDWR | O_APPEND | O_CREAT | O_TRUNC | O_EXCL | O_NOFOLLOW
     private static let openFileLimit = 256
+    /// Non-blocking, so probing a FIFO for its errno cannot hang the JS queue waiting on a writer.
+    private static let probeFlags = O_RDONLY | O_NONBLOCK | O_CLOEXEC
 
     func closeFiles() {
         for handle in fileHandles.values { try? handle.close() }
@@ -156,10 +158,10 @@ final class ExtensionNodeShims: @unchecked Sendable {
 
         case "readFile":
             let target = try path(0)
-            if let data = fileManager.contents(atPath: target) {
-                return data.base64EncodedString()
+            guard let data = fileManager.contents(atPath: target) else {
+                throw readError("open", target)
             }
-            throw readError("open", target)
+            return data.base64EncodedString()
 
         case "writeFile":
             let target = try path(0)
@@ -338,37 +340,33 @@ final class ExtensionNodeShims: @unchecked Sendable {
             "\(name): \(String(cString: strerror(code))), \(syscall)\(target)", name)
     }
 
-    /// A nil read hides the errno, so reopen raw and report it in Node's wording.
-    /// `reportedPath` names what the caller passed; the probe itself uses `path`.
-    private func readError(_ syscall: String, _ path: String, reportedPath: String? = nil) -> ShimError {
-        let display = reportedPath ?? path
-        let fd = Darwin.open(path, O_RDONLY | O_CLOEXEC)
-        guard fd >= 0 else {
+    /// A nil FileManager read hides the errno, so reprobe the path and report it in Node's wording.
+    private func readError(_ syscall: String, _ path: String) -> ShimError {
+        let descriptor = Darwin.open(path, Self.probeFlags)
+        guard descriptor >= 0 else {
             switch errno {
-            case ENOENT: return .noEntry(display, syscall)
+            case ENOENT: return .noEntry(path, syscall)
             case EPERM:
-                return .failed("EPERM: operation not permitted, \(syscall) '\(display)'", "EPERM")
+                return .failed("EPERM: operation not permitted, \(syscall) '\(path)'", "EPERM")
             case EACCES:
-                return .failed("EACCES: permission denied, \(syscall) '\(display)'", "EACCES")
+                return .failed("EACCES: permission denied, \(syscall) '\(path)'", "EACCES")
             case ENOTDIR:
-                return .failed("ENOTDIR: not a directory, \(syscall) '\(display)'", "ENOTDIR")
-            default: return fileError(syscall, display)
+                return .failed("ENOTDIR: not a directory, \(syscall) '\(path)'", "ENOTDIR")
+            default: return fileError(syscall, path)
             }
         }
-        defer { Darwin.close(fd) }
-        // Opened fine a moment later: classify with fstat instead of guessing.
+        defer { Darwin.close(descriptor) }
         var status = Darwin.stat()
-        guard Darwin.fstat(fd, &status) == 0 else {
-            return .failed("EIO: i/o error, \(syscall) '\(display)'", "EIO")
+        let isDirectory =
+            Darwin.fstat(descriptor, &status) == 0 && status.st_mode & S_IFMT == S_IFDIR
+        if syscall == "scandir", !isDirectory {
+            return .failed("ENOTDIR: not a directory, \(syscall) '\(path)'", "ENOTDIR")
         }
-        let type = status.st_mode & S_IFMT
-        if syscall == "scandir", type != S_IFDIR {
-            return .failed("ENOTDIR: not a directory, \(syscall) '\(display)'", "ENOTDIR")
+        if syscall == "open", isDirectory {
+            return .failed(
+                "EISDIR: illegal operation on a directory, \(syscall) '\(path)'", "EISDIR")
         }
-        if type == S_IFDIR {
-            return .failed("EISDIR: illegal operation on a directory, \(syscall) '\(display)'", "EISDIR")
-        }
-        return .noEntry(display, syscall)
+        return .noEntry(path, syscall)
     }
 
     private static let errorNames: [Int32: String] = [
@@ -381,7 +379,7 @@ final class ExtensionNodeShims: @unchecked Sendable {
         let target =
             followLinks ? URL(fileURLWithPath: path).resolvingSymlinksInPath().path : path
         guard let attributes = try? fileManager.attributesOfItem(atPath: target) else {
-            throw readError("stat", target, reportedPath: path)
+            throw readError("stat", path)
         }
 
         let type = attributes[.type] as? FileAttributeType
