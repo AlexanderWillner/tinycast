@@ -339,22 +339,36 @@ final class ExtensionNodeShims: @unchecked Sendable {
     }
 
     /// A nil read hides the errno, so reopen raw and report it in Node's wording.
-    private func readError(_ syscall: String, _ path: String) -> ShimError {
+    /// `reportedPath` names what the caller passed; the probe itself uses `path`.
+    private func readError(_ syscall: String, _ path: String, reportedPath: String? = nil) -> ShimError {
+        let display = reportedPath ?? path
         let fd = Darwin.open(path, O_RDONLY | O_CLOEXEC)
-        guard fd < 0 else {
-            Darwin.close(fd)
-            return .noEntry(path, syscall)
+        guard fd >= 0 else {
+            switch errno {
+            case ENOENT: return .noEntry(display, syscall)
+            case EPERM:
+                return .failed("EPERM: operation not permitted, \(syscall) '\(display)'", "EPERM")
+            case EACCES:
+                return .failed("EACCES: permission denied, \(syscall) '\(display)'", "EACCES")
+            case ENOTDIR:
+                return .failed("ENOTDIR: not a directory, \(syscall) '\(display)'", "ENOTDIR")
+            default: return fileError(syscall, display)
+            }
         }
-        switch errno {
-        case ENOENT: return .noEntry(path, syscall)
-        case EPERM:
-            return .failed("EPERM: operation not permitted, \(syscall) '\(path)'", "EPERM")
-        case EACCES:
-            return .failed("EACCES: permission denied, \(syscall) '\(path)'", "EACCES")
-        case ENOTDIR:
-            return .failed("ENOTDIR: not a directory, \(syscall) '\(path)'", "ENOTDIR")
-        default: return fileError(syscall, path)
+        defer { Darwin.close(fd) }
+        // Opened fine a moment later: classify with fstat instead of guessing.
+        var status = Darwin.stat()
+        guard Darwin.fstat(fd, &status) == 0 else {
+            return .failed("EIO: i/o error, \(syscall) '\(display)'", "EIO")
         }
+        let type = status.st_mode & S_IFMT
+        if syscall == "scandir", type != S_IFDIR {
+            return .failed("ENOTDIR: not a directory, \(syscall) '\(display)'", "ENOTDIR")
+        }
+        if type == S_IFDIR {
+            return .failed("EISDIR: illegal operation on a directory, \(syscall) '\(display)'", "EISDIR")
+        }
+        return .noEntry(display, syscall)
     }
 
     private static let errorNames: [Int32: String] = [
@@ -367,7 +381,7 @@ final class ExtensionNodeShims: @unchecked Sendable {
         let target =
             followLinks ? URL(fileURLWithPath: path).resolvingSymlinksInPath().path : path
         guard let attributes = try? fileManager.attributesOfItem(atPath: target) else {
-            throw readError("stat", target)
+            throw readError("stat", target, reportedPath: path)
         }
 
         let type = attributes[.type] as? FileAttributeType
