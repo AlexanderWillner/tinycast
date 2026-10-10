@@ -238,6 +238,7 @@ final class AppSettings {
     var dictationLanguage: String?
     var dictationDestination = DictationDestination.copy
     var dictationAdaptsCapitalization = true
+    var dictationLiveInsertion = false
 }
 
 enum HotKeyAction { case dictation }
@@ -262,6 +263,7 @@ final class DictationCapture {
 
     init() { Self.latest = self }
     func start(microphoneID: String?) async throws { isRecording = true }
+    func snapshot() -> [Float] { [] }
     func stop() async -> [Float] {
         isRecording = false
         stopCount += 1
