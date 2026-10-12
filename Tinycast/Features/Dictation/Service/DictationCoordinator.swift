@@ -15,6 +15,7 @@ final class DictationCoordinator {
     private let injector: TextInjector
     private let showMessage: (String, DialogTone) -> Void
     private let confirmEnable: () async -> Bool
+    private let askAI: (String) -> Void
     @ObservationIgnored private var phase: Phase = .idle
     @ObservationIgnored private var token = UUID()
     @ObservationIgnored private var enableTask: Task<Void, Never>?
@@ -30,7 +31,8 @@ final class DictationCoordinator {
         settings: AppSettings, hotKeys: HotKeyManager, models: DictationModelStore,
         injector: TextInjector, audioDucker: DictationAudioDucker,
         confirmEnable: @escaping () async -> Bool,
-        showMessage: @escaping (String, DialogTone) -> Void
+        showMessage: @escaping (String, DialogTone) -> Void,
+        askAI: @escaping (String) -> Void = { _ in }
     ) {
         self.settings = settings
         self.hotKeys = hotKeys
@@ -39,6 +41,7 @@ final class DictationCoordinator {
         self.audioDucker = audioDucker
         self.confirmEnable = confirmEnable
         self.showMessage = showMessage
+        self.askAI = askAI
         panel.onAccept = { [weak self] in self?.accept() }
         panel.onCancel = { [weak self] in self?.cancel() }
         capture.onLevels = { [weak self] in self?.panel.state.levels = $0 }
@@ -198,6 +201,17 @@ final class DictationCoordinator {
                     adaptCapitalization: settings.dictationAdaptsCapitalization)
                 let target = self.target
                 guard !text.isEmpty else { reset(cancelTranscription: false); return }
+                if destination == .askAI {
+                    guard settings.aiEnabled else {
+                        reset(cancelTranscription: false)
+                        showMessage("Turn on AI to dictate questions", .danger)
+                        return
+                    }
+                    panel.close()
+                    askAI(text)
+                    reset(cancelTranscription: false)
+                    return
+                }
                 panel.close()
                 if destination.pastes {
                     injector.deliver(

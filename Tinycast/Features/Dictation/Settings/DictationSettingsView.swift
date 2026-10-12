@@ -177,7 +177,9 @@ struct DictationSettingsView: View {
                     }
                     Picker(selection: $settings.dictationDestination) {
                         ForEach(DictationDestination.allCases) { destination in
-                            Text(destination.title).tag(destination)
+                            if destination != .askAI || settings.aiEnabled {
+                                Text(destination.title).tag(destination)
+                            }
                         }
                     } label: {
                         SettingsRowTitle(.dictationOutput, "When finished")
@@ -189,9 +191,14 @@ struct DictationSettingsView: View {
                 } header: {
                     SettingsSectionHeader(.dictationOutput)
                 } footer: {
-                    Text(
-                        "Press Return to finish dictating or Escape to cancel. Protected fields may refuse insertion."
-                    )
+                    Group {
+                        Text(
+                            "Press Return to finish dictating or Escape to cancel. Protected fields may refuse insertion."
+                        )
+                        if !settings.aiEnabled {
+                            Text("Turn on AI to dictate questions to Quick AI.")
+                        }
+                    }
                 }
 
             }

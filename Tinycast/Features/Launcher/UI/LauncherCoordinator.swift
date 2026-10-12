@@ -63,10 +63,11 @@ final class LauncherCoordinator {
     // MARK: - Activation
 
     func launch(
-        _ app: AppEntry, searchQuery: String? = nil, arguments: [String: String] = [:]
+        _ app: AppEntry, searchQuery: String? = nil, arguments: [String: String] = [:],
+        fromAI: Bool = false
     ) {
-        // A category word is no search for the row: learning it would rank the row under "s".
-        if !CommandCatalog.isQueryDriven(app) {
+        // A model run must not train ranking, and a category word is no search for the row.
+        if !fromAI, !CommandCatalog.isQueryDriven(app) {
             let term = searchQuery.flatMap { AppEntry.Kind.named(by: $0) == nil ? $0 : nil }
             ranking.visit(itemKey: app.preferenceKey, query: term)
         }

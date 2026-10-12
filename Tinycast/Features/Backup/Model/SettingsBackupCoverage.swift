@@ -152,6 +152,9 @@ enum SettingsBackupCoverage {
         AppSettingsKey.mcpEnabled.rawValue:
             "Doubles as consent to run third-party MCP servers, one of which is a local process; a "
             + "flag that grants a capability is never carried by a backup.",
+        AppSettingsKey.tinycastMCPEnabled.rawValue:
+            "Lets the model act on this Mac through Tinycast's own tools; a flag that grants a "
+            + "capability is never carried by a backup.",
         AppSettingsKey.mcpServers.rawValue:
             "An MCP server is a source of executable code and a destination for chat context, and "
             + "it is meaningless without the machine-local Keychain secrets it describes.",

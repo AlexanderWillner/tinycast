@@ -369,6 +369,11 @@ final class AppSettings {
     var mcpEnabled: Bool {
         didSet { defaults.set(mcpEnabled, forKey: Key.mcpEnabled.rawValue) }
     }
+
+    /// Off by default: letting the model act on this Mac is its own consent.
+    var tinycastMCPEnabled: Bool {
+        didSet { defaults.set(tinycastMCPEnabled, forKey: Key.tinycastMCPEnabled.rawValue) }
+    }
     var aiEnabled: Bool {
         didSet { defaults.set(aiEnabled, forKey: Key.aiEnabled.rawValue) }
     }
@@ -738,6 +743,7 @@ final class AppSettings {
         notesFolder = defaults.string(forKey: Key.notesFolder.rawValue)
         aiEnabled = defaults.bool(forKey: Key.aiEnabled.rawValue)
         mcpEnabled = defaults.bool(forKey: Key.mcpEnabled.rawValue)
+        tinycastMCPEnabled = defaults.bool(forKey: Key.tinycastMCPEnabled.rawValue)
         customCommandsEnabled = defaults.bool(forKey: Key.customCommandsEnabled.rawValue)
         // These default on, so absence must be distinguished from a stored `false`.
         customCommandsShowInLauncher =

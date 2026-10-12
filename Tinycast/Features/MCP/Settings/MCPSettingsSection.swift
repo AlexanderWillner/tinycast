@@ -15,6 +15,10 @@ struct MCPSettingsSection: View {
             Toggle(isOn: $appSettings.mcpEnabled) {
                 SettingsRowTitle(.aiMCPServers, "Enable MCP servers")
             }
+            Toggle(isOn: $appSettings.tinycastMCPEnabled) {
+                SettingsRowTitle(.aiMCPServers, "Tinycast actions")
+                Text("Let the model open apps, files and windows through Tinycast itself.")
+            }
             Group {
                 if store.servers.isEmpty {
                     Text("No MCP servers yet.")

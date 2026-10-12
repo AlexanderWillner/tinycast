@@ -717,6 +717,7 @@
 		E77BF5D26A6D9E9FC7E82259 /* ChatTranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1798C6CF803D5E1BB2FFE4 /* ChatTranscriptView.swift */; };
 		E7A780C7E9B20D898FFD7EB3 /* WindowSwitchQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = F42BECB8234FEA49797B68F6 /* WindowSwitchQuery.swift */; };
 		E83FDB17E14F16E2D5AEC099 /* WindowLayoutAnchor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65D1C9A117E443C6DA2BD9E /* WindowLayoutAnchor.swift */; };
+		E88901ADE9D0F0D242A88EE5 /* TinycastTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6734E5AD32C000E59A79DCC9 /* TinycastTools.swift */; };
 		E8AD3FBDA8B150790643A2F5 /* NotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E2E570E54DEEF29FF2B65E /* NotesView.swift */; };
 		E8B5311B9F93E1646D9B4B0B /* DictationModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35ED5C4019986E638EE5C28 /* DictationModelStore.swift */; };
 		E8CB7624CCA5905AF1A4FAD9 /* AppCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BECF24B674F9458E4A876DA /* AppCore.swift */; };
@@ -1166,6 +1167,7 @@
 		65F1010FAC9C0EC4DBDE58A8 /* AIRequestBody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIRequestBody.swift; sourceTree = "<group>"; };
 		6621A88681E993D49EEF07A3 /* tinycast.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = tinycast.icon; sourceTree = "<group>"; };
 		666E0A469BE1984BEF1A9A50 /* CalcDimension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcDimension.swift; sourceTree = "<group>"; };
+		6734E5AD32C000E59A79DCC9 /* TinycastTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TinycastTools.swift; sourceTree = "<group>"; };
 		676760D8D30526B99A1F97B7 /* RoomPreviewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomPreviewController.swift; sourceTree = "<group>"; };
 		677036AB7EE67B050C2930D5 /* AXScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXScreens.swift; sourceTree = "<group>"; };
 		67B6CA2ED2DDD9A89C7EE874 /* EmojiScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiScreen.swift; sourceTree = "<group>"; };
@@ -1695,6 +1697,7 @@
 			isa = PBXGroup;
 			children = (
 				7CFFF4B2F2BF476AD9B111B9 /* MCPCoordinator.swift */,
+				6734E5AD32C000E59A79DCC9 /* TinycastTools.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -4477,6 +4480,7 @@
 				6A0C45313C7B73349C7B17E0 /* ThinScrollbar.swift in Sources */,
 				FEA3CEC6870A030FAF1F4331 /* ThumbnailCache.swift in Sources */,
 				68FCC30764DD44ED72EFB6BA /* TinycastApp.swift in Sources */,
+				E88901ADE9D0F0D242A88EE5 /* TinycastTools.swift in Sources */,
 				2C8F7F5073D77EDC1070E639 /* ToolRunner.swift in Sources */,
 				867B82EDC8A12BBC51592786 /* Tooltip.swift in Sources */,
 				FA05D882203673A9FEE5F421 /* UninstallCoordinator.swift in Sources */,

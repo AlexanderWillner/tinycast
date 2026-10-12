@@ -103,7 +103,8 @@ final class AppCore {
                 symbol: "waveform", confirmTitle: "Continue", tone: .neutral,
                 confirmRole: .standard)
         },
-        showMessage: { [unowned self] in self.showMessage($0, tone: $1) })
+        showMessage: { [unowned self] in self.showMessage($0, tone: $1) },
+        askAI: { [unowned self] in self.quickAICoordinator.ask($0) })
     @ObservationIgnored private(set) lazy var quicklinkCoordinator = QuicklinkCoordinator(
         store: quicklinks, settings: settings,
         appIndex: appIndex, injector: textInjector, hotKeys: hotKeys, favorites: favorites,

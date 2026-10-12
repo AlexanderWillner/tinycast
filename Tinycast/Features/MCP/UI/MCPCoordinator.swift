@@ -12,6 +12,8 @@ final class MCPCoordinator {
 
     /// Servers each conversation was granted; keyed, since a dialog may outlive a chat switch.
     @ObservationIgnored private var chatGrants: [UUID: Set<UUID>] = [:]
+    /// Entries a recent search listed, so runs use an id the model actually saw.
+    @ObservationIgnored private var tinycastEntries: [String: AppEntry] = [:]
 
     init(
         settings: AppSettings, store: MCPSettingsStore, manager: MCPServerManager, core: AppCore
@@ -56,29 +58,36 @@ final class MCPCoordinator {
 
     var slugs: Set<String> {
         guard isActive else { return [] }
-        return Set(store.enabledServers.map(\.slug))
+        var slugs = Set(store.enabledServers.map(\.slug))
+        if settings.tinycastMCPEnabled { slugs.insert(TinycastTools.slug) }
+        return slugs
     }
 
     /// What a chat's tools menu lists; empty while MCP is off.
     var servers: [MCPServer] {
         guard isActive else { return [] }
-        return store.enabledServers
+        return store.enabledServers + (settings.tinycastMCPEnabled ? [TinycastTools.server()] : [])
     }
 
     func server(slug: String) -> MCPServer? {
         guard isActive else { return nil }
+        if settings.tinycastMCPEnabled, slug == TinycastTools.slug { return TinycastTools.server() }
         return store.enabledServers.first { $0.slug == slug }
     }
 
     /// What this turn may reach: everything enabled, or one server when `@slug` named it.
     func tools(scopedTo slug: String?) -> [AITool] {
         guard isActive else { return [] }
-        return manager.tools
+        var tools = manager.tools
             .filter { tool in
                 guard slug == nil || tool.serverSlug == slug else { return false }
                 return store.server(id: tool.serverID)?.trust != .never
             }
             .map(\.aiTool)
+        if settings.tinycastMCPEnabled, slug == nil || slug == TinycastTools.slug {
+            tools += TinycastTools.tools()
+        }
+        return tools
     }
 
     /// The same list for a CLI route; it starts its own copies, so Tinycast's need not be ready.
@@ -108,8 +117,13 @@ final class MCPCoordinator {
     }
 
     func invoke(_ call: AIToolCall, in chat: UUID) async -> AIToolResult {
-        guard let route = MCPToolName.parse(call.name),
-            let server = server(slug: route.slug),
+        guard let route = MCPToolName.parse(call.name) else {
+            return .failure(call.id, "That tool is no longer connected.")
+        }
+        if route.slug == TinycastTools.slug {
+            return await invokeTinycast(tool: route.tool, call: call, in: chat)
+        }
+        guard let server = server(slug: route.slug),
             let connection = manager.connection(slug: route.slug)
         else {
             return .failure(call.id, "That tool is no longer connected.")
@@ -180,6 +194,56 @@ final class MCPCoordinator {
         defer { connection.stop() }
         await connection.start()
         return connection.status
+    }
+
+    /// Tinycast's own tools: fixed ask-per-chat consent, never a standing grant.
+    private func invokeTinycast(tool: String, call: AIToolCall, in chat: UUID) async -> AIToolResult {
+        guard settings.tinycastMCPEnabled else {
+            return .failure(call.id, "Tinycast tools are off.")
+        }
+        guard await permitTinycast(tool: tool, in: chat) else {
+            return .failure(call.id, "The user declined this tool call.")
+        }
+        switch tool {
+        case "launcher_search":
+            guard
+                let args = try? JSONDecoder().decode(
+                    TinycastTools.SearchArgs.self, from: Data(call.arguments.utf8))
+            else {
+                return .failure(call.id, "Pass a query to search.")
+            }
+            let content = TinycastTools.search(args.query, in: core.appIndex, cache: &tinycastEntries)
+            return AIToolResult(callID: call.id, content: content, isError: false)
+        case "launcher_run":
+            guard
+                let args = try? JSONDecoder().decode(
+                    TinycastTools.RunArgs.self, from: Data(call.arguments.utf8))
+            else {
+                return .failure(call.id, "Pass an entry id from a search.")
+            }
+            let content = TinycastTools.run(
+                id: args.id, cache: tinycastEntries, launcher: core.launcherCoordinator)
+            return AIToolResult(callID: call.id, content: content, isError: false)
+        default:
+            return .failure(call.id, "Unknown tool.")
+        }
+    }
+
+    private func permitTinycast(tool: String, in chat: UUID) async -> Bool {
+        if chatGrants[chat]?.contains(TinycastTools.serverID) == true { return true }
+        let index = await core.choose(
+            title: "Let Tinycast run an action?",
+            message: "The model wants to call \u{201C}\(tool)\u{201D}. "
+                + "Tinycast runs this itself, on this Mac.",
+            symbol: "wrench.and.screwdriver",
+            options: [
+                DialogAction(title: "Allow This Chat"),
+                DialogAction(title: "Don't Allow", role: .cancel)
+            ],
+            defaultIndex: 1)
+        guard index == 0 else { return false }
+        chatGrants[chat, default: []].insert(TinycastTools.serverID)
+        return true
     }
 
     private func isPermitted(_ server: MCPServer, tool: String, in chat: UUID) async -> Bool {

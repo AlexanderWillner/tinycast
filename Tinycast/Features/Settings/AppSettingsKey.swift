@@ -91,6 +91,7 @@ enum AppSettingsKey: String, CaseIterable {
     case aiDisabledRoutes = "aiDisabledRoutes"
     case aiInstalledOverrides = "aiInstalledOverrides"
     case mcpEnabled = "mcpEnabled"
+    case tinycastMCPEnabled = "tinycastMCPEnabled"
     case mcpServers = "mcpServers"
     case quickActionsEnabled = "quickActionsEnabled"
     case quickActionModel = "quickActionModel"

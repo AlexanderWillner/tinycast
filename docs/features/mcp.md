@@ -52,6 +52,11 @@ nothing about MCP. `AIChatCoordinator.send` is the one place the two meet.
   Allow** — which is what Escape does — refuses that one call and lets the next ask again. Escape is
   never allowed to persist a decision, and `.never` is set on the server's row in Settings.
   `MCPTrustPolicy` is the whole rule and it is pure.
+- **Tinycast's own server asks every chat.** The built-in `tinycast` entry offers the launcher as
+  `launcher_search` and `launcher_run`, runs in-process (CLI routes never see it), and knows no
+  Always: its dialog grants This Chat or refuses. Shell, auto-typing, unaudited system actions and
+  AI-invoking-AI are not runnable, and any new launcher kind fails to build until it lands on one
+  side. Model runs never train personal ranking.
 - **A refused or failed call is content, never a thrown error.** It comes back as an `AIToolResult`
   the model can read and work around, so a declined tool ends in an honest sentence rather than a
   failed turn.

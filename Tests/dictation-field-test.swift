@@ -238,6 +238,7 @@ final class AppSettings {
     var dictationLanguage: String?
     var dictationDestination = DictationDestination.copy
     var dictationAdaptsCapitalization = true
+    var aiEnabled = false
 }
 
 enum HotKeyAction { case dictation }

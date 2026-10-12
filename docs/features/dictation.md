@@ -27,6 +27,9 @@ compilation of its 2-bit weights; Ultra's encoder and both variants' decoder/joi
   binding; hold-to-talk accepts a Carbon chord or a single physical modifier, including Globe.
   Modifier holds begin after 250 ms alone and reserve their key across single and double taps.
   Another modifier, key or click cancels the hold without inserting text. Double taps require toggle.
+- The "Ask AI" destination sends the transcript to Quick AI instead of pasting it. The option
+  appears only while AI is enabled, and a stored choice from before still refuses with a message
+  rather than asking silently.
 - Carbon or the shared modifier monitor reports release to stop a held recording. Return finishes,
   Escape cancels. Opening a shortcut recorder cancels a held recording before pausing its shortcuts.
   A session token
