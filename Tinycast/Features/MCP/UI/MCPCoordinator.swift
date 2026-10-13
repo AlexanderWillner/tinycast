@@ -167,9 +167,7 @@ final class MCPCoordinator {
                     handle: TinycastTools.slug, title: TinycastTools.title,
                     transport: .url(
                         TinycastMCPWire.urlString, headerName: "Authorization",
-                        headerValue: "Basic "
-                            + TinycastMCPWire.basicAuthValue(
-                                username: settings.tinycastMCPUsername, password: password))))
+                        headerValue: TinycastMCPWire.bearerAuthValue(password: password))))
         }
         for server in store.enabledServers
         where server.trust != .never && (slug == nil || server.slug == slug) {

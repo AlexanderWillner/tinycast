@@ -60,8 +60,10 @@ nothing about MCP. `AIChatCoordinator.send` is the one place the two meet.
   personal ranking.
 - **Sharing stays on this Mac.** The listener binds only `127.0.0.1:4932`, every call asks on
   this Mac with no standing grant, and the CLI consent channel defers to that execution-time
-  dialog so one call is never asked twice. The password lives in the Keychain, generated once
-  and resettable; no remote access, no TLS story.
+  dialog so one call is never asked twice. Outside clients use Basic auth with the username;
+  Codex takes the same password as a bearer token, which is the only auth its URL servers
+  honour. The password lives in the Keychain, generated once and resettable; no remote access,
+  no TLS story.
 - **A refused or failed call is content, never a thrown error.** It comes back as an `AIToolResult`
   the model can read and work around, so a declined tool ends in an honest sentence rather than a
   failed turn.

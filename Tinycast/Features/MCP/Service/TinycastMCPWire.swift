@@ -7,16 +7,23 @@ enum TinycastMCPWire {
     static let path = "/mcp"
     static var urlString: String { "http://127.0.0.1:\(port)\(path)" }
 
-    /// The `Authorization` value a client sends for this username and password.
+    /// The base64 half of a Basic value for this username and password.
     static func basicAuthValue(username: String, password: String) -> String {
         Data("\(username):\(password)".utf8).base64EncodedString()
+    }
+
+    /// The `Authorization` value Codex sends: the password as a bearer token.
+    static func bearerAuthValue(password: String) -> String {
+        "Bearer \(password)"
     }
 
     static func authorized(headers: [String: String], username: String, password: String) -> Bool {
         guard !password.isEmpty else { return false }
         let lowered = Dictionary(uniqueKeysWithValues: headers.map { ($0.key.lowercased(), $0.value) })
-        guard let value = lowered["authorization"], value.hasPrefix("Basic ") else { return false }
-        return value.dropFirst(6) == basicAuthValue(username: username, password: password)
+        guard let value = lowered["authorization"] else { return false }
+        if value.hasPrefix("Bearer ") { return String(value.dropFirst(7)) == password }
+        guard value.hasPrefix("Basic ") else { return false }
+        return String(value.dropFirst(6)) == basicAuthValue(username: username, password: password)
     }
 
     struct Call: Equatable {

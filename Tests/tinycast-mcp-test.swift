@@ -18,8 +18,11 @@ struct TinycastMCPTest {
         guard !TinycastMCPWire.authorized(headers: headers, username: "t", password: "wrong") else {
             fatalError("Wrong password accepted")
         }
-        guard !TinycastMCPWire.authorized(headers: ["Authorization": "Bearer s3cret"], username: "t", password: "s3cret") else {
-            fatalError("Bearer accepted where only Basic lives")
+        guard TinycastMCPWire.authorized(headers: ["Authorization": "Bearer s3cret"], username: "t", password: "s3cret") else {
+            fatalError("Bearer token refused")
+        }
+        guard !TinycastMCPWire.authorized(headers: ["Authorization": "Bearer wrong"], username: "t", password: "s3cret") else {
+            fatalError("Wrong bearer token accepted")
         }
         guard !TinycastMCPWire.authorized(headers: [:], username: "t", password: "s3cret") else {
             fatalError("Missing credentials accepted")
