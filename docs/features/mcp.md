@@ -53,10 +53,15 @@ nothing about MCP. `AIChatCoordinator.send` is the one place the two meet.
   never allowed to persist a decision, and `.never` is set on the server's row in Settings.
   `MCPTrustPolicy` is the whole rule and it is pure.
 - **Tinycast's own server asks every chat.** The built-in `tinycast` entry offers the launcher as
-  `launcher_search` and `launcher_run`, runs in-process (CLI routes never see it), and knows no
-  Always: its dialog grants This Chat or refuses. Shell, auto-typing, unaudited system actions and
-  AI-invoking-AI are not runnable, and any new launcher kind fails to build until it lands on one
-  side. Model runs never train personal ranking.
+  `launcher_search` and `launcher_run`: in-process for the API loop, over localhost HTTP for CLI
+  routes and outside clients once shared. Its dialog grants This Chat or refuses; there is no
+  Always. Shell, auto-typing, unaudited system actions and AI-invoking-AI are not runnable, and
+  any new launcher kind fails to build until it lands on one side. Model runs never train
+  personal ranking.
+- **Sharing stays on this Mac.** The listener binds only `127.0.0.1:4932`, every call asks on
+  this Mac with no standing grant, and the CLI consent channel defers to that execution-time
+  dialog so one call is never asked twice. The password lives in the Keychain, generated once
+  and resettable; no remote access, no TLS story.
 - **A refused or failed call is content, never a thrown error.** It comes back as an `AIToolResult`
   the model can read and work around, so a declined tool ends in an honest sentence rather than a
   failed turn.

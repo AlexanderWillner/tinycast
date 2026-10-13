@@ -13,18 +13,13 @@ enum TinycastTools {
         MCPServer(id: serverID, name: title, slug: slug, isEnabled: true, trust: .ask)
     }
 
-    struct SearchArgs: Decodable {
-        let query: String
-    }
-
-    struct RunArgs: Decodable {
-        let id: String
-    }
+    static let searchTool = "launcher_search"
+    static let runTool = "launcher_run"
 
     static func tools() -> [AITool] {
         [
             AITool(
-                name: MCPToolName.compose(slug: slug, tool: "launcher_search"),
+                name: MCPToolName.compose(slug: slug, tool: searchTool),
                 description:
                     "Search Tinycast's launcher for apps, files, windows, shortcuts and more. "
                     + "Returns entry ids to run.",
@@ -40,7 +35,7 @@ enum TinycastTools {
                 ]),
                 origin: title, title: "Search launcher"),
             AITool(
-                name: MCPToolName.compose(slug: slug, tool: "launcher_run"),
+                name: MCPToolName.compose(slug: slug, tool: runTool),
                 description:
                     "Run a launcher entry by id from a search. The user confirms each run.",
                 parameters: .object([

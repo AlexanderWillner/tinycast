@@ -692,6 +692,8 @@ final class AppCore {
             {
                 _ = $0.aiEnabled
                 _ = $0.mcpEnabled
+                _ = $0.tinycastMCPEnabled
+                _ = $0.tinycastMCPSharingEnabled
             }, reproject: { $0.mcpCoordinator.applyEnabled() })
         track(
             { _ = $0.quickActionsEnabled },

@@ -374,6 +374,17 @@ final class AppSettings {
     var tinycastMCPEnabled: Bool {
         didSet { defaults.set(tinycastMCPEnabled, forKey: Key.tinycastMCPEnabled.rawValue) }
     }
+
+    /// Off by default: serving the tools opens them to other AI on this Mac.
+    var tinycastMCPSharingEnabled: Bool {
+        didSet {
+            defaults.set(tinycastMCPSharingEnabled, forKey: Key.tinycastMCPSharingEnabled.rawValue)
+        }
+    }
+
+    var tinycastMCPUsername: String {
+        didSet { defaults.set(tinycastMCPUsername, forKey: Key.tinycastMCPUsername.rawValue) }
+    }
     var aiEnabled: Bool {
         didSet { defaults.set(aiEnabled, forKey: Key.aiEnabled.rawValue) }
     }
@@ -744,6 +755,10 @@ final class AppSettings {
         aiEnabled = defaults.bool(forKey: Key.aiEnabled.rawValue)
         mcpEnabled = defaults.bool(forKey: Key.mcpEnabled.rawValue)
         tinycastMCPEnabled = defaults.bool(forKey: Key.tinycastMCPEnabled.rawValue)
+        tinycastMCPSharingEnabled = defaults.bool(forKey: Key.tinycastMCPSharingEnabled.rawValue)
+        let username = defaults.string(forKey: Key.tinycastMCPUsername.rawValue)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        tinycastMCPUsername = username.flatMap { $0.isEmpty ? nil : $0 } ?? "tinycast"
         customCommandsEnabled = defaults.bool(forKey: Key.customCommandsEnabled.rawValue)
         // These default on, so absence must be distinguished from a stored `false`.
         customCommandsShowInLauncher =

@@ -15,11 +15,20 @@ struct MCPSettingsSection: View {
             Toggle(isOn: $appSettings.mcpEnabled) {
                 SettingsRowTitle(.aiMCPServers, "Enable MCP servers")
             }
-            Toggle(isOn: $appSettings.tinycastMCPEnabled) {
-                SettingsRowTitle(.aiMCPServers, "Tinycast actions")
-                Text("Let the model open apps, files and windows through Tinycast itself.")
-            }
             Group {
+                Toggle(isOn: $appSettings.tinycastMCPEnabled) {
+                    SettingsRowTitle(.aiMCPServers, "Tinycast actions")
+                    Text("Let the model open apps, files and windows through Tinycast itself.")
+                }
+                if appSettings.tinycastMCPEnabled {
+                    Toggle(isOn: $appSettings.tinycastMCPSharingEnabled) {
+                        SettingsRowTitle(.aiMCPServers, "Share with other AI")
+                        Text("Serve the tools on this Mac over localhost HTTP.")
+                    }
+                    if appSettings.tinycastMCPSharingEnabled {
+                        TinycastSharingRows()
+                    }
+                }
                 if store.servers.isEmpty {
                     Text("No MCP servers yet.")
                         .foregroundStyle(.secondary)
@@ -90,6 +99,54 @@ struct MCPSettingsSection: View {
         } catch {
             removalError =
                 "\(server.title) was kept: its credentials could not be removed from your login Keychain."
+        }
+    }
+}
+
+/// Username, password, status and snippet for sharing Tinycast's tools on this Mac.
+private struct TinycastSharingRows: View {
+    @Environment(MCPCoordinator.self) private var coordinator
+    @Environment(AppSettings.self) private var settings
+
+    var body: some View {
+        @Bindable var settings = settings
+        LabeledContent("Username") {
+            TextField("tinycast", text: $settings.tinycastMCPUsername)
+                .multilineTextAlignment(.trailing)
+        }
+        LabeledContent("Password") {
+            HStack {
+                Text(coordinator.sharingPassword() ?? "\u{2026}")
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Button("Copy") {
+                    if let password = coordinator.sharingPassword() {
+                        Paster.copyPlainText(password)
+                    }
+                }
+                Button("Reset") { coordinator.resetSharingPassword() }
+            }
+        }
+        LabeledContent("Status") { status }
+        LabeledContent("Connect") {
+            Button("Copy snippet") {
+                if let snippet = coordinator.tinycastConnectionSnippet() {
+                    Paster.copyPlainText(snippet)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var status: some View {
+        switch coordinator.tinycastSharingState {
+        case .stopped:
+            Text("Stopped").foregroundStyle(.secondary)
+        case .running:
+            Text("127.0.0.1:\(TinycastMCPWire.port)").foregroundStyle(.secondary)
+        case .failed(let message):
+            Text(message).foregroundStyle(.orange)
         }
     }
 }
