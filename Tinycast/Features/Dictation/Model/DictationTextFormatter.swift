@@ -24,7 +24,6 @@ enum DictationTextFormatter {
         }
     }
 
-    /// Drops the overlap's repeated head word-wise; "" when only echo remains.
     static func stripEcho(_ text: String, after previous: String) -> String {
         guard !text.isEmpty, !previous.isEmpty else { return text }
         let tail = Array(previous.split(separator: " ").suffix(8))

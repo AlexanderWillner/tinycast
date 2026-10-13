@@ -94,7 +94,6 @@ final class DictationCapture {
         return samples
     }
 
-    /// A copy of everything recorded so far, without stopping the session.
     func snapshot() -> [Float] {
         guard session != nil else { return [] }
         return collector?.snapshot() ?? []

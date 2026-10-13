@@ -68,10 +68,10 @@ compilation of its 2-bit weights; Ultra's encoder and both variants' decoder/joi
   bounded JSON control messages and binary audio; recordings are never written to disk or sent
   over the network. Long recordings split near a quiet passage without overlapping samples.
 - Live insertion is off by default and flushes at speech pauses, or after eight seconds of
-  unpaused speech at the latest. While recording, the coordinator transcribes the audio
-  since the last flush and pastes each chunk through `TextInjector` in
-  order; finishing transcribes only the remainder. A cancelled chunk keeps its audio behind for
-  that final pass, and a copy destination receives the assembled text. Chunk cuts fall near a
+  unpaused speech at the latest. While recording, the coordinator transcribes the audio since the
+  last flush and pastes each chunk through `TextInjector` in order; finishing lets queued chunks
+  land, then transcribes only the remainder. A cancelled chunk keeps its audio behind for that
+  final pass, and a copy destination receives the assembled text. Chunk cuts fall near a
   quiet passage, like long recordings do, and copy-only sessions never start the live loop.
 - Every flush re-transcribes from a pause-anchored overlap start and drops the repeated head
   word-wise, tolerating fragment words and case or punctuation variants, so word splits at

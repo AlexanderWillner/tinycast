@@ -8,7 +8,6 @@ enum DictationAudioChunks {
     /// Audio re-transcribed with every flush so word splits at the cut rarely duplicate.
     static let liveOverlapSamples = 32_000
 
-    /// Flush restart: quietest 200 ms within three seconds before `start`, else two, else zero.
     static func liveOverlapStart(in samples: [Float], before start: Int) -> Int {
         precondition(start >= 0 && start <= samples.count)
         guard start > liveOverlapSamples else { return 0 }
@@ -28,7 +27,6 @@ enum DictationAudioChunks {
         return cut
     }
 
-    /// Live cut: quietest 200 ms of the last three seconds, else `end`, else `start` if too short.
     static func liveCut(in samples: [Float], from start: Int, to end: Int) -> Int {
         precondition(start >= 0 && start <= end && end <= samples.count)
         guard end - start >= minimumLiveSamples else { return start }
@@ -44,7 +42,6 @@ enum DictationAudioChunks {
         return cut
     }
 
-    /// Flush-worthy pause: last half second quiet beside the loudest 200 ms; silence never counts.
     static func endsInPause(in samples: [Float], from start: Int, to end: Int) -> Bool {
         precondition(start >= 0 && start <= end && end <= samples.count)
         guard end - start >= minimumLiveSamples else { return false }

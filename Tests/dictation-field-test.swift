@@ -13,6 +13,8 @@ struct DictationFieldTest {
         try await testQueuedCancellation(closing: false)
         try await testQueuedCancellation(closing: true)
         try await testLiveDeliveryFailure()
+        try await testQueuedLiveChunk(cancelling: false)
+        try await testQueuedLiveChunk(cancelling: true)
         print("ALL PASSED")
     }
 
@@ -134,21 +136,63 @@ struct DictationFieldTest {
         fixture.settings.dictationDestination = .paste
         fixture.settings.dictationLiveInsertion = true
         _ = fixture.coordinator
-        fixture.capture.snapshotSamples = [Float](repeating: 0.5, count: 32_000)
+        fixture.capture.snapshotSamples =
+            [Float](repeating: 0.5, count: 32_000)
             + [Float](repeating: 0, count: 16_000)
         fixture.coordinator.pressed()
         try await waitLong { fixture.capture.isRecording }
-        try await waitLong { fixture.capture.isRecording }
         try await waitLong { fixture.models.pending != nil }
         fixture.models.finish("Spoken words")
-        // The flush formats and delivers past the finished transcription.
-        try await Task.sleep(for: .milliseconds(200))
+        try await wait { fixture.models.finished }
         fixture.coordinator.accept()
         try await waitLong { !fixture.messages.isEmpty }
         expect(
             fixture.messages == ["Couldn't paste some dictation into this app"],
             "A failed live chunk is reported once at finish, never silently lost")
         expect(Paster.copies.isEmpty, "A paste destination copies nothing on the way out")
+    }
+
+    private static func testQueuedLiveChunk(cancelling: Bool) async throws {
+        let fixture = Fixture()
+        fixture.settings.dictationLiveInsertion = true
+        let editor = ComposerTextView()
+        var release: CheckedContinuation<Void, Never>?
+        fixture.queue.enqueue(isAutomatic: false) {
+            await withCheckedContinuation { release = $0 }
+        }
+        try await wait { release != nil }
+        try await fixture.start(into: editor)
+        fixture.capture.snapshotSamples =
+            [Float](repeating: 0.5, count: 32_000)
+            + [Float](repeating: 0, count: 16_000)
+        try await waitLong { fixture.models.pending != nil }
+        fixture.models.finish("Spoken words")
+        try await wait { fixture.models.finished }
+
+        guard cancelling else {
+            fixture.coordinator.toggle(into: editor)
+            release?.resume()
+            try await wait { fixture.coordinator.field == nil }
+            expect(editor.string == "Spoken words", "Finishing lets a queued live chunk land")
+            expect(fixture.messages.isEmpty, "A landed live chunk reports nothing")
+            return
+        }
+        fixture.coordinator.cancel(in: editor)
+        release?.resume()
+        await fixture.queue.drain()
+        try await wait { !fixture.capture.isRecording }
+        fixture.settings.dictationLiveInsertion = false
+        // Stopping ignores a toggle, so retry until the cancelled session has wound down.
+        try await wait {
+            if fixture.coordinator.field == nil { fixture.coordinator.toggle(into: editor) }
+            return fixture.capture.isRecording
+        }
+        fixture.coordinator.toggle(into: editor)
+        try await wait { fixture.models.pending != nil }
+        fixture.models.finish("More words")
+        try await wait { fixture.coordinator.field == nil }
+        expect(editor.string == "More words", "Cancelling drops a queued live chunk")
+        expect(fixture.messages.isEmpty, "A chunk dropped by cancelling never fails the next session")
     }
 
     /// The live poll sleeps longer than `wait` allows.

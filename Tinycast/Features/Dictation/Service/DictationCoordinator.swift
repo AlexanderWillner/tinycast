@@ -191,20 +191,17 @@ final class DictationCoordinator {
             guard let self else { return }
             await pendingLive?.value
             let samples = await capture.stop()
+            // Queued chunks land first: reset would drop them, and the remainder spaces after them.
+            if !liveText.isEmpty { await injector.drain() }
             guard token == current else { return }
             let tail = liveOffset < samples.count ? Array(samples[liveOffset...]) : []
             let destination = field == nil ? settings.dictationDestination : .paste
             if tail.count < 1_600 {
-                let copy = liveText
-                let lost = liveDeliveryFailed
-                reset(cancelTranscription: false)
-                if copy.isEmpty {
+                if liveText.isEmpty {
+                    reset(cancelTranscription: false)
                     showMessage("No speech was recorded", .danger)
                 } else {
-                    if destination.copies { Paster.copyPlainText(copy) }
-                    if lost, destination.pastes {
-                        showMessage("Couldn't paste some dictation into this app", .danger)
-                    }
+                    finishWithoutRemainder(destination)
                 }
                 return
             }
@@ -220,12 +217,7 @@ final class DictationCoordinator {
                     adaptCapitalization: settings.dictationAdaptsCapitalization)
                 let target = self.target
                 let assembled = liveText + text
-                guard !text.isEmpty else {
-                    let copy = liveText
-                    reset(cancelTranscription: false)
-                    if !copy.isEmpty, destination.copies { Paster.copyPlainText(copy) }
-                    return
-                }
+                guard !text.isEmpty else { finishWithoutRemainder(destination); return }
                 panel.close()
                 if destination.pastes {
                     injector.deliver(
@@ -259,6 +251,14 @@ final class DictationCoordinator {
         }
     }
 
+    private func finishWithoutRemainder(_ destination: DictationDestination) {
+        let text = liveText
+        let lost = liveDeliveryFailed
+        reset(cancelTranscription: false)
+        if !text.isEmpty, destination.copies { Paster.copyPlainText(text) }
+        if lost, destination.pastes { showMessage("Couldn't paste some dictation into this app", .danger) }
+    }
+
     /// Chunks already pasted only make sense where text is pasted at all.
     private var insertionPastes: Bool {
         field == nil ? settings.dictationDestination.pastes : true
@@ -289,8 +289,9 @@ final class DictationCoordinator {
         guard token == current else { return }
         let fresh = snapshot.count - liveOffset
         guard fresh >= DictationAudioChunks.minimumLiveSamples else { return }
-        guard fresh >= DictationAudioChunks.maximumLiveSamples
-            || DictationAudioChunks.endsInPause(in: snapshot, from: liveOffset, to: snapshot.count)
+        guard
+            fresh >= DictationAudioChunks.maximumLiveSamples
+                || DictationAudioChunks.endsInPause(in: snapshot, from: liveOffset, to: snapshot.count)
         else { return }
         let end = DictationAudioChunks.liveCut(in: snapshot, from: liveOffset, to: snapshot.count)
         guard end > liveOffset else { return }
@@ -310,13 +311,15 @@ final class DictationCoordinator {
             guard !stripped.isEmpty else { return }
             liveText += stripped
             let target = self.target
-            // Overlap absorbs word splits; shortcut: pasted text is never revised.
             injector.deliver(
                 InjectedText(stripped), target: target, expectedKeyword: nil,
                 keywordLength: 0, automaticGeneration: nil,
                 isValid: { [weak self] in self?.token == current },
                 onDelivered: {},
-                onFailed: { [weak self] in self?.liveDeliveryFailed = true })
+                onFailed: { [weak self] in
+                    guard let self, token == current else { return }
+                    liveDeliveryFailed = true
+                })
         } catch {
             // The final pass starts at liveOffset, so it covers what this chunk left behind.
         }
