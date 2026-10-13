@@ -23,6 +23,7 @@ final class DictationCoordinator {
     @ObservationIgnored private var liveTask: Task<Void, Never>?
     @ObservationIgnored private var liveOffset = 0
     @ObservationIgnored private var liveText = ""
+    @ObservationIgnored private var liveDeliveryFailed = false
     @ObservationIgnored private var stopTask: Task<Void, Never>?
     @ObservationIgnored private var finishWhenStarted = false
     @ObservationIgnored private var target: InjectionTarget?
@@ -195,11 +196,15 @@ final class DictationCoordinator {
             let destination = field == nil ? settings.dictationDestination : .paste
             if tail.count < 1_600 {
                 let copy = liveText
+                let lost = liveDeliveryFailed
                 reset(cancelTranscription: false)
                 if copy.isEmpty {
                     showMessage("No speech was recorded", .danger)
-                } else if destination.copies {
-                    Paster.copyPlainText(copy)
+                } else {
+                    if destination.copies { Paster.copyPlainText(copy) }
+                    if lost, destination.pastes {
+                        showMessage("Couldn't paste some dictation into this app", .danger)
+                    }
                 }
                 return
             }
@@ -229,8 +234,12 @@ final class DictationCoordinator {
                         isValid: { [weak self] in self?.token == current },
                         onDelivered: { [weak self] in
                             guard let self, token == current else { return }
+                            let lost = liveDeliveryFailed
                             if destination.copies { Paster.copyPlainText(assembled) }
                             reset(cancelTranscription: false)
+                            if lost, destination.pastes {
+                                showMessage("Couldn't paste some dictation into this app", .danger)
+                            }
                         },
                         onFailed: { [weak self] in
                             guard let self, token == current else { return }
@@ -305,7 +314,9 @@ final class DictationCoordinator {
             injector.deliver(
                 InjectedText(stripped), target: target, expectedKeyword: nil,
                 keywordLength: 0, automaticGeneration: nil,
-                isValid: { [weak self] in self?.token == current })
+                isValid: { [weak self] in self?.token == current },
+                onDelivered: {},
+                onFailed: { [weak self] in self?.liveDeliveryFailed = true })
         } catch {
             // The final pass starts at liveOffset, so it covers what this chunk left behind.
         }
@@ -349,6 +360,7 @@ final class DictationCoordinator {
         liveTask = nil
         liveOffset = 0
         liveText = ""
+        liveDeliveryFailed = false
         startTask = nil
         transcriptionTask = nil
         phase = .idle

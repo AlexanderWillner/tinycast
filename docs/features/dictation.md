@@ -76,7 +76,8 @@ compilation of its 2-bit weights; Ultra's encoder and both variants' decoder/joi
 - Every flush re-transcribes from a pause-anchored overlap start and drops the repeated head
   word-wise, tolerating fragment words and case or punctuation variants, so word splits at
   chunk cuts rarely duplicate. When the app exposes no caret, spacing and casing fall back to
-  the already pasted text instead of gluing chunks together. Pasted text is never revised: matching Siri-style
+  the already pasted text instead of gluing chunks together. A chunk that fails to paste is
+  reported once at finish, never silently lost. Pasted text is never revised: matching Siri-style
   correction would mean deleting and retyping inside foreign apps, which is fragile next to a
   moving cursor and the user's own edits.
 - Model files download through a feature-private ephemeral session without a disk URL cache.

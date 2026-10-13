@@ -12,6 +12,7 @@ struct DictationFieldTest {
         try await testWindowClose()
         try await testQueuedCancellation(closing: false)
         try await testQueuedCancellation(closing: true)
+        try await testLiveDeliveryFailure()
         print("ALL PASSED")
     }
 
@@ -126,6 +127,37 @@ struct DictationFieldTest {
         expect(first.text == "First draft", "Queued speech cannot write into its canceled draft")
         expect(state.chat.text == (closing ? "First draft" : "New chat"), "Queued speech cannot cross chats")
         expect(fixture.messages.isEmpty, "Discarding queued speech is silent")
+    }
+
+    private static func testLiveDeliveryFailure() async throws {
+        let fixture = Fixture()
+        fixture.settings.dictationDestination = .paste
+        fixture.settings.dictationLiveInsertion = true
+        _ = fixture.coordinator
+        fixture.capture.snapshotSamples = [Float](repeating: 0.5, count: 32_000)
+            + [Float](repeating: 0, count: 16_000)
+        fixture.coordinator.pressed()
+        try await waitLong { fixture.capture.isRecording }
+        try await waitLong { fixture.capture.isRecording }
+        try await waitLong { fixture.models.pending != nil }
+        fixture.models.finish("Spoken words")
+        // The flush formats and delivers past the finished transcription.
+        try await Task.sleep(for: .milliseconds(200))
+        fixture.coordinator.accept()
+        try await waitLong { !fixture.messages.isEmpty }
+        expect(
+            fixture.messages == ["Couldn't paste some dictation into this app"],
+            "A failed live chunk is reported once at finish, never silently lost")
+        expect(Paster.copies.isEmpty, "A paste destination copies nothing on the way out")
+    }
+
+    /// The live poll sleeps longer than `wait` allows.
+    private static func waitLong(until condition: () -> Bool) async throws {
+        let deadline = ContinuousClock.now + .seconds(8)
+        while !condition() {
+            guard ContinuousClock.now < deadline else { throw CocoaError(.coderInvalidValue) }
+            try await Task.sleep(for: .milliseconds(1))
+        }
     }
 
     private static func wait(until condition: () -> Bool) async throws {
@@ -263,7 +295,8 @@ final class DictationCapture {
 
     init() { Self.latest = self }
     func start(microphoneID: String?) async throws { isRecording = true }
-    func snapshot() -> [Float] { [] }
+    var snapshotSamples: [Float] = []
+    func snapshot() -> [Float] { snapshotSamples }
     func stop() async -> [Float] {
         isRecording = false
         stopCount += 1
