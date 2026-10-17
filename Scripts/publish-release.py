@@ -40,7 +40,7 @@ cask = '''cask "%s" do
   desc "Native macOS launcher"
   homepage "https://github.com/mSarheed/pipcast"
   auto_updates true
-  depends_on macos: ">= :tahoe"
+  depends_on macos: :tahoe
   app "%s.app"
 end
 ''' % (token, version, hashlib.sha256(arm.read_bytes()).hexdigest(), hashlib.sha256(intel.read_bytes()).hexdigest(), app, app)
